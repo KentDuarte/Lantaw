@@ -1,4 +1,7 @@
 from rest_framework import viewsets, permissions
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from .models import Project, ProjectMembers
 from .serializers import ProjectSerializer, ProjectMembersSerializer
 
@@ -87,4 +90,15 @@ class ProjectMembersViewSet(viewsets.ModelViewSet):
         if project_pk:
             qs = qs.filter(project_id=project_pk)
         return qs
-        
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def public_projects_list(request):
+    """
+    Public, read-only list of projects (names only).
+    No authentication required.
+    """
+    projects = Project.objects.all().order_by("id")
+    data = [{"id": project.id, "name": project.name} for project in projects]
+    return Response(data)

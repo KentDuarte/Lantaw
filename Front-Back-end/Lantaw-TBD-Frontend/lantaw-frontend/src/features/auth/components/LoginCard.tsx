@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthForm } from "../../../components/layout/AuthForm.tsx";
 import type { AuthFormData } from "../../../components/layout/AuthForm.tsx";
 import { Eye } from "lucide-react";
+import { Button } from "../../../components/common/button";
 import api from "../../../api/client";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../../../api/constants";
 import { useAuth } from "../../../context/AuthContext";
@@ -41,6 +42,11 @@ export default function LoginCard() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
+        <div className="mb-4">
+          <Button variant="outline" onClick={() => navigate("/")}>
+            Back
+          </Button>
+        </div>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="p-3 rounded-xl bg-primary">

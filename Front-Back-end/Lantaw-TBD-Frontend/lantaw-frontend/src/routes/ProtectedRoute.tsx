@@ -1,6 +1,7 @@
 import { Navigate, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { ReactNode } from "react";
+import Landing from "../pages/Landing";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -18,9 +19,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Show loading indicator while waiting for auth state.
   if (loading) return <div>Loading in protected route...</div>;
 
-  // If user isn't authenticated, redirect to login (and save their intended location).
-  if (!isAuthenticated)
+  // If user isn't authenticated:
+  // - For the root path ("/"), show the public landing page.
+  // - For other protected paths, redirect to login (and save their intended location).
+  if (!isAuthenticated) {
+    if (location.pathname === "/") {
+      return <Landing />;
+    }
     return <Navigate to="/login" state={{ from: location }} />;
+  }
 
   // If route is project-scoped and user is required to be a member:
   if (projectScoped && user?.role === "PROJECT_STAFF") {

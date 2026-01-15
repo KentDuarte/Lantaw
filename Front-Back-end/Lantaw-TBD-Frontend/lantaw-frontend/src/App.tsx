@@ -12,6 +12,7 @@ import { RoleRoute } from "./routes/RoleRoute";
 import { AuthProvider } from "./context/AuthContext";
 import { ProjectProvider } from "./context/ProjectContext";
 import AppLayout from "../src/features/layout/components/AppLayout";
+import PublicProjects from "./pages/PublicProjects";
 
 function RegisterAndLogout() {
   localStorage.clear();
@@ -28,6 +29,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/logout" element={<Logout />} />
             <Route path="/register" element={<RegisterAndLogout />} />
+            <Route path="/projects" element={<PublicProjects />} />
 
             {/* Protected routes inside AppLayout */}
             <Route

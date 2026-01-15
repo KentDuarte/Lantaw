@@ -12,7 +12,7 @@ from drf_spectacular.views import (
 )
 
 
-from projects.views import ProjectViewSet, ProjectMembersViewSet
+from projects.views import ProjectViewSet, ProjectMembersViewSet, public_projects_list
 from activities.views import ObjectiveViewSet, ActivityViewSet
 from personnel.views import RoleViewSet, DepartmentViewSet, PersonnelViewSet
 from budget.views import BudgetLineItemViewSet, CompensationViewSet
@@ -41,7 +41,8 @@ urlpatterns = [
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-    
+    path('api/projects-public/', public_projects_list, name='projects-public'),
+
     path('api/', include(router.urls)),  # all projects API under /api/
     path('api/', include(projects_router.urls)),  # nested objectives API under /api/
     path('api/', include(objectives_router.urls)),  # nested activities API under /api
