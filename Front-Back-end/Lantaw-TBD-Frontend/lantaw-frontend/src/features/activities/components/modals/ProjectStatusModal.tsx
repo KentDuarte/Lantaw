@@ -1,0 +1,84 @@
+// Modal for updating project status.
+
+import React from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../../../../components/common/dialog";
+import { Button } from "../../../../components/common/button";
+import { Label } from "../../../../components/common/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../../components/common/select";
+import type { Project } from "../../../../context/ProjectContext";
+
+interface ProjectStatusModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  projectStatus: Project["project_status"];
+  onStatusChange: (status: Project["project_status"]) => void;
+  onUpdate: () => void;
+}
+
+export const ProjectStatusModal: React.FC<ProjectStatusModalProps> = ({
+  isOpen,
+  onClose,
+  projectStatus,
+  onStatusChange,
+  onUpdate,
+}) => {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Update Project Status</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="project-status" className="mb-2">
+              Project Status
+            </Label>
+            <Select value={projectStatus} onValueChange={onStatusChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select project status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ACTIVE">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    <span>Active</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="ONHOLD">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-gray-400" />
+                    <span>On Hold</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="COMPLETED">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span>Completed</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={onUpdate}>Update Status</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
