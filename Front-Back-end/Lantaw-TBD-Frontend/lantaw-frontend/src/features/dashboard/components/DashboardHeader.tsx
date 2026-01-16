@@ -6,19 +6,26 @@ import { Edit } from "lucide-react";
 
 interface DashboardHeaderProps {
   projectName: string;
+  projectLeader?: string;
   projectDescription: string;
   onEditProject: () => void;
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   projectName,
+  projectLeader,
   projectDescription,
   onEditProject,
 }) => {
   return (
     <div className="flex items-start justify-between">
       <div className="flex-1">
-        <h1 className="mb-2">{projectName}</h1>
+        <h1 className="mb-2 text-[24px] font-bold font-[Instrument_Sans]">{projectName}</h1>
+        {projectLeader && (
+          <p className="mb-2 text-[16px] font-bold font-[Instrument_Sans]">
+            Project Leader: {projectLeader}
+          </p>
+        )}
         <p className="text-muted-foreground">{projectDescription}</p>
       </div>
       <Button variant="outline" onClick={onEditProject}>

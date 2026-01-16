@@ -100,5 +100,5 @@ def public_projects_list(request):
     No authentication required.
     """
     projects = Project.objects.all().order_by("id")
-    data = [{"id": project.id, "name": project.name} for project in projects]
+    data = [{"id": project.id, "name": project.name, "project_leader": project.project_leader} for project in projects]
     return Response(data)

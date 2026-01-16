@@ -8,6 +8,7 @@ class Project(models.Model):
     Model to represent a project in the application.
     Fields:
     - name: Name of the project.
+    - project_leader: Name of the project leader.
     - description: Detailed description of the project.
     - grant_amount: Financial grant amount allocated to the project.
     - project_status: Current status of the project (e.g., Active, Completed, On Hold).
@@ -22,6 +23,7 @@ class Project(models.Model):
     ]
 
     name = models.CharField(max_length=255, null=False, blank=False)
+    project_leader = models.CharField(max_length=255, blank=False, null=False)
     description = models.TextField(blank=True)
     grant_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0.00), MaxValueValidator(999999999999.99)])
     project_status = models.CharField(

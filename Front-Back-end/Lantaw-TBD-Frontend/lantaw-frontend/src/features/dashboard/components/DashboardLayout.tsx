@@ -88,6 +88,7 @@ const DashboardLayout = () => {
   const [budgetView, setBudgetView] = useState<BudgetViewType>("OVERVIEW");
   const [editFormData, setEditFormData] = useState({
     name: "",
+    projectLeader: "",
     description: "",
     startDate: "",
     endDate: "",
@@ -179,6 +180,7 @@ const DashboardLayout = () => {
     if (currentProject && isEditProjectModalOpen) {
       setEditFormData({
         name: currentProject.name || "",
+        projectLeader: currentProject.project_leader || "",
         description: currentProject.description || "",
         startDate: currentProject.date_start || "",
         endDate: currentProject.date_end || "",
@@ -217,6 +219,7 @@ const DashboardLayout = () => {
       // Create project payload
       const projectPayload = {
         name: editFormData.name,
+        project_leader: editFormData.projectLeader,
         description: editFormData.description,
         date_start: editFormData.startDate,
         date_end: editFormData.endDate,
@@ -244,6 +247,7 @@ const DashboardLayout = () => {
       {/* Header */}
       <DashboardHeader
         projectName={currentProject.name}
+        projectLeader={currentProject.project_leader}
         projectDescription={currentProject.description || ""}
         onEditProject={handleOpenEditProjectModal}
       />

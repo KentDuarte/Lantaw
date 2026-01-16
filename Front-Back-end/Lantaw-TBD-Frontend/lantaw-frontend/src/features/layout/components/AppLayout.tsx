@@ -51,6 +51,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [createProjectError, setCreateProjectError] = useState("");
   const [createProjectForm, setCreateProjectForm] = useState({
     name: "",
+    projectLeader: "",
     description: "",
     startDate: "",
     endDate: "",
@@ -62,9 +63,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const checkStaffExists = async (email: string): Promise<boolean> => {
     if (!email.trim()) return false;
     try {
-      const staffRes = await api.get(`/api/users/?search=${email.trim()}`);
-      const staffList = staffRes.data.results;
-      return !!(staffList && staffList.length > 0);
+      const staffRes = await api.get(`/api/users/check/?email=${encodeURIComponent(email.trim())}`);
+      return staffRes.data.exists === true;
     } catch (err) {
       console.error("Failed to lookup staff:", err);
       // Return false so we can show in the UI
@@ -80,6 +80,10 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     setCreateProjectError("");
 
+    if (!createProjectForm.projectLeader.trim()) {
+      setCreateProjectError("Project leader is required.");
+      return;
+    }
     if (!createProjectForm.name.trim()) {
       setCreateProjectError("Project name is required.");
       return;
@@ -92,23 +96,22 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     try {
       // Check if staff exists
       const staffRes = await api.get(
-        `/api/users/?search=${createProjectForm.projectStaff.trim()}`
+        `/api/users/check/?email=${encodeURIComponent(createProjectForm.projectStaff.trim())}`
       );
 
-      const staffList = staffRes.data.results;
-
-      if (!staffList || staffList.length === 0) {
+      if (!staffRes.data.exists) {
         setCreateProjectError(
           "Staff does not exist. Please enter a valid email."
         );
         return;
       }
 
-      const userId = staffList[0].id;
+      const userId = staffRes.data.id;
 
       // Create project
       const projectPayload = {
         name: createProjectForm.name,
+        project_leader: createProjectForm.projectLeader,
         description: createProjectForm.description,
         date_start: createProjectForm.startDate,
         date_end: createProjectForm.endDate,
@@ -128,6 +131,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       setIsCreateProjectModalOpen(false);
       setCreateProjectForm({
         name: "",
+        projectLeader: "",
         description: "",
         startDate: "",
         endDate: "",

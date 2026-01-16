@@ -6,6 +6,7 @@ import { Button } from "../components/common/button";
 interface Project {
   id: number;
   name: string;
+  project_leader?: string;
 }
 
 export default function PublicProjects() {
@@ -58,16 +59,26 @@ export default function PublicProjects() {
           )}
 
           {!loading && !error && projects.length > 0 && (
-            <ul className="space-y-2">
-              {projects.map((project) => (
-                <li
-                  key={project.id}
-                  className="rounded-md border bg-card px-4 py-2 text-sm"
-                >
-                  {project.name}
-                </li>
-              ))}
-            </ul>
+            <div className="rounded-md border bg-card overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">NAME</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">LEADER</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projects.map((project) => (
+                    <tr key={project.id} className="border-t">
+                      <td className="px-4 py-3 text-sm">{project.name}</td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
+                        {project.project_leader || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </main>

@@ -9,7 +9,7 @@ const Logout: React.FC = () => {
     logout();
   }, [logout]);
 
-  return <Navigate to="/login" replace />;
+  return <Navigate to="/landing" replace />;
 };
 
 export default Logout;

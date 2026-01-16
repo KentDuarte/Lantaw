@@ -1,4 +1,5 @@
 from rest_framework import viewsets, permissions, generics, status, filters
+from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth import get_user_model
 from .serializers import UserSerializer, RegisterSerializer, PasswordChangeSerializer
 from rest_framework.response import Response
@@ -77,3 +78,32 @@ class PasswordChangeView(generics.UpdateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"detail": "Password updated successfully."}, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def check_user_exists(request):
+    """
+    Check if a user exists by exact email match.
+    Only accessible to authenticated users (admins can check any email).
+    """
+    email = request.query_params.get('email', '').strip()
+    
+    if not email:
+        return Response({"exists": False, "error": "Email parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        user = User.objects.get(email__iexact=email)
+        # Only return user data if requester is admin or checking their own email
+        if request.user.role == "ADMIN" or request.user.email.lower() == email.lower():
+            return Response({
+                "exists": True,
+                "id": user.id,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name
+            })
+        else:
+            # User exists but requester doesn't have permission to see it
+            return Response({"exists": False}, status=status.HTTP_403_FORBIDDEN)
+    except User.DoesNotExist:
+        return Response({"exists": False})

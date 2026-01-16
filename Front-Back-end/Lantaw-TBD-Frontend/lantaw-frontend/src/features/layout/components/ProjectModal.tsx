@@ -13,6 +13,7 @@ import { Button } from "../../../components/common/button";
 
 interface ProjectFormData {
   name: string;
+  projectLeader: string;
   description: string;
   totalGrant: string;
   startDate: string;
@@ -54,6 +55,10 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
   // Sync field validation
   const validateField = (field: keyof ProjectFormData, value: string) => {
     let error = "";
+
+    if (field === "projectLeader") {
+      if (!value.trim()) error = "Project leader is required.";
+    }
 
     if (field === "name") {
       if (!value.trim()) error = "Project name is required.";
@@ -127,6 +132,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
   // Full-form validation before submission
   const validateAll = async (): Promise<boolean> => {
     const fields: (keyof ProjectFormData)[] = [
+      "projectLeader",
       "name",
       "startDate",
       "endDate",
@@ -179,8 +185,8 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
   // Determine whether Create/Save button should be disabled
   const hasErrors = Object.values(formErrors).some((v) => v && v.length > 0);
   const requiredMissing = isEdit
-    ? !formData.name.trim()
-    : !formData.name.trim() || !formData.projectStaff.trim();
+    ? !formData.name.trim() || !formData.projectLeader.trim()
+    : !formData.name.trim() || !formData.projectLeader.trim() || !formData.projectStaff.trim();
 
   // Conditionally determine the modal title and submit button text
   const modalTitle = isEdit ? "Edit Project" : "Create New Project";
@@ -195,6 +201,25 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Project Leader */}
+          <div>
+            <Label htmlFor="create-project-leader" className="mb-2">
+              Project Leader
+            </Label>
+            <Input
+              id="create-project-leader"
+              value={formData.projectLeader}
+              onChange={handleChange("projectLeader")}
+              placeholder="Enter project leader name..."
+              className={`${inputBaseClass} ${
+                formErrors.projectLeader ? errorInputClass : normalInputClass
+              }`}
+            />
+            {formErrors.projectLeader ? (
+              <p className="mt-1 text-xs text-red-600">{formErrors.projectLeader}</p>
+            ) : null}
+          </div>
+
           {/* Project Name */}
           <div>
             <Label htmlFor="create-project-name" className="mb-2">
