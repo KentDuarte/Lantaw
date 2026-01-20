@@ -8,8 +8,8 @@ function Activities() {
   // Show loading while checking auth
   if (loading) return <div>Loading...</div>;
 
-  // Check if user has required role (Admin or Project Staff)
-  const allowedRoles = ["Admin", "Project Staff"];
+  // Check if user has required role (Admin, Project Staff, or Executive)
+  const allowedRoles = ["Admin", "Project Staff", "Executive"];
   if (!user || !allowedRoles.includes(user.role)) {
     return <Navigate to="/notfound" replace />;
   }

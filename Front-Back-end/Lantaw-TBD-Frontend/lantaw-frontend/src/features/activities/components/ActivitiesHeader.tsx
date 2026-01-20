@@ -11,6 +11,7 @@ interface ActivitiesHeaderProps {
   projectStatus: string;
   onEditProjectStatus: () => void;
   onAddObjective: () => void;
+  userRole?: string;
 }
 
 export const ActivitiesHeader: React.FC<ActivitiesHeaderProps> = ({
@@ -18,6 +19,7 @@ export const ActivitiesHeader: React.FC<ActivitiesHeaderProps> = ({
   projectStatus,
   onEditProjectStatus,
   onAddObjective,
+  userRole,
 }) => {
   const statusStyle = getProjectStatusStyle(projectStatus);
 
@@ -41,23 +43,25 @@ export const ActivitiesHeader: React.FC<ActivitiesHeaderProps> = ({
           Manage objectives and activities for {projectName}.
         </p>
       </div>
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          onClick={onEditProjectStatus}
-          className="bg-background hover:bg-muted"
-        >
-          <Edit className="h-4 w-4 mr-2" />
-          Project Status
-        </Button>
-        <Button
-          onClick={onAddObjective}
-          className="bg-primary hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Objective
-        </Button>
-      </div>
+      {userRole !== "Executive" && (
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={onEditProjectStatus}
+            className="bg-background hover:bg-muted"
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Project Status
+          </Button>
+          <Button
+            onClick={onAddObjective}
+            className="bg-primary hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Objective
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

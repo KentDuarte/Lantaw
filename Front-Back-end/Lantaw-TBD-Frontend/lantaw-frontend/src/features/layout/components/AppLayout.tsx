@@ -155,13 +155,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { name: "Profile", icon: UserCircle, path: "/profile" },
   ];
 
-  // Filter menu items based on user role - hide Activities for Executive users
-  const menuItems = allMenuItems.filter((item) => {
-    if (item.name === "Activities" && user?.role === "Executive") {
-      return false;
-    }
-    return true;
-  });
+  // Use all menu items (no filtering needed - route protection handles access)
+  const menuItems = allMenuItems;
 
   // Helper: status color
   const getProjectStatusColor = (status: string) => {
@@ -180,17 +175,35 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Fetch user's projects
   useEffect(() => {
     const fetchProjects = async () => {
-      if (!user?.projects?.length) return;
+      if (!user) return;
 
       try {
-        const responses = await Promise.all(
-          user.projects.map((id) => api.get(`/api/projects/${id}/`))
-        );
-        const projectData = responses.map((res) => res.data);
-        setProjects(projectData);
-        if (projectData.length > 0) setCurrentProject(projectData[0]);
+        // For Executives and Admins, fetch all projects from /api/projects/
+        if (user.role === "Executive" || user.role === "Admin") {
+          const response = await api.get("/api/projects/");
+          // Handle paginated response (Django REST Framework returns { results: [...] })
+          const projectData = Array.isArray(response.data) 
+            ? response.data 
+            : (response.data.results || []);
+          setProjects(projectData);
+          if (projectData.length > 0) setCurrentProject(projectData[0]);
+        }
+        // For Project Staff, fetch from user.projects array
+        else if (user.role === "Project Staff" && user.projects?.length) {
+          const responses = await Promise.all(
+            user.projects.map((id) => api.get(`/api/projects/${id}/`))
+          );
+          const projectData = responses.map((res) => res.data);
+          setProjects(projectData);
+          if (projectData.length > 0) setCurrentProject(projectData[0]);
+        } else {
+          // Ensure projects is always an array
+          setProjects([]);
+        }
       } catch (error) {
         console.error("Failed to fetch projects:", error);
+        // Set empty array on error to prevent map errors
+        setProjects([]);
       }
     };
 

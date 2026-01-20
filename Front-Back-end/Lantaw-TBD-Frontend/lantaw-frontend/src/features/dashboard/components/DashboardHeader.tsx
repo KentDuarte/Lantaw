@@ -9,6 +9,7 @@ interface DashboardHeaderProps {
   projectLeader?: string;
   projectDescription: string;
   onEditProject: () => void;
+  userRole?: string;
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
@@ -16,6 +17,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   projectLeader,
   projectDescription,
   onEditProject,
+  userRole,
 }) => {
   return (
     <div className="flex items-start justify-between">
@@ -28,9 +30,11 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         )}
         <p className="text-muted-foreground">{projectDescription}</p>
       </div>
-      <Button variant="outline" onClick={onEditProject}>
-        <Edit className="h-4 w-4 mr-2" /> Edit Project
-      </Button>
+      {userRole !== "Executive" && (
+        <Button variant="outline" onClick={onEditProject}>
+          <Edit className="h-4 w-4 mr-2" /> Edit Project
+        </Button>
+      )}
     </div>
   );
 };

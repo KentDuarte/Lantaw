@@ -5,6 +5,7 @@ import { Accordion } from "../../../components/common/accordion";
 
 // Context
 import { useProject } from "../../../context/ProjectContext";
+import { useAuth } from "../../../context/AuthContext";
 
 // Hooks
 import { useActivities } from "../hooks/useActivities";
@@ -32,6 +33,7 @@ import type { Activity } from "../../../types/activity";
 
 const ActivitiesLayout = () => {
   const { currentProject, setCurrentProject } = useProject();
+  const { user } = useAuth();
   const activities = useActivities(currentProject?.id || null);
   const filters = useActivityFilters();
 
@@ -217,6 +219,7 @@ const ActivitiesLayout = () => {
         projectStatus={projectStatus}
         onEditProjectStatus={() => setIsProjectStatusModalOpen(true)}
         onAddObjective={handleOpenAddObjectiveModal}
+        userRole={user?.role}
       />
 
       {/* Search and Filters */}
@@ -245,7 +248,7 @@ const ActivitiesLayout = () => {
                 onEditActivity={handleOpenEditActivityModal}
                 onDeleteActivity={handleOpenDeleteActivityModal}
                 onAddExpense={handleOpenAddExpenseModal}
-                showActions={true}
+                showActions={user?.role !== "Executive"}
               />
             );
           })}

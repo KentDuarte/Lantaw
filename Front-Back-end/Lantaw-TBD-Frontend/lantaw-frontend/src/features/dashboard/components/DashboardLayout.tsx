@@ -250,6 +250,7 @@ const DashboardLayout = () => {
         projectLeader={currentProject.project_leader}
         projectDescription={currentProject.description || ""}
         onEditProject={handleOpenEditProjectModal}
+        userRole={user?.role}
       />
 
       {/* Summary Cards */}
