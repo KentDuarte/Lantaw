@@ -35,6 +35,9 @@ class Command(BaseCommand):
             grant_amount = float(seeder.faker.random_int(min=1000000, max=10000000))
             project_status = project_statuses[i]
             
+            # Generate project leader name
+            project_leader = seeder.faker.name()
+            
             # Generate dates
             days_ago = seeder.faker.random_int(min=15, max=60)
             days_ahead = seeder.faker.random_int(min=180, max=730)
@@ -49,6 +52,7 @@ class Command(BaseCommand):
                     'project_status': project_status,
                     'date_start': date_start,
                     'date_end': date_end,
+                    'project_leader': project_leader,
                 }
             )
             if created:

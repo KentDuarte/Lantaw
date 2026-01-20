@@ -2,7 +2,9 @@ import axios from 'axios';
 import { ACCESS_TOKEN, REFRESH_TOKEN } from './constants';
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
+    // If VITE_API_URL is not set (common in local dev), keep requests relative.
+    // With Vite proxy configured, "/api/..." will be forwarded to Django.
+    baseURL: import.meta.env.VITE_API_URL ?? '',
 })
 
 api.interceptors.request.use(
