@@ -32,6 +32,7 @@ interface PersonnelAccordionProps {
   onAddHonoraria: (personnel: Personnel) => void;
   onEditHonoraria: (personnel: Personnel, compensationId: number) => void;
   onDeleteHonoraria: (personnel: Personnel, compensationId: number) => void;
+  showActions?: boolean;
 }
 
 export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
@@ -47,6 +48,7 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
   onAddHonoraria,
   onEditHonoraria,
   onDeleteHonoraria,
+  showActions = true,
 }) => {
   const salary = compensations.filter((c) => c.type === "SALARY");
   const honorariaItems = compensations.filter((c) => c.type === "HONORARIA");
@@ -102,28 +104,32 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEditPersonnel(personnel);
-              }}
-              className="h-8 w-8 p-0"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeletePersonnel(personnel);
-              }}
-              className="h-8 w-8 p-0"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {showActions && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditPersonnel(personnel);
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeletePersonnel(personnel);
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            )}
             <div className="w-4 h-4 flex items-center justify-center ml-2">
               <AccordionTrigger />
             </div>
@@ -170,6 +176,7 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
                           onDelete={(comp) =>
                             onDeleteSalary(personnel, comp.id)
                           }
+                          showActions={showActions}
                         />
                       ))
                     ) : (
@@ -188,20 +195,22 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
                       <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">
                         Total: ₱{getTotal(honorariaItems).toLocaleString()}
                       </span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        onClick={() => onAddHonoraria(personnel)}
-                        disabled={!isBudgetReady}
-                        title={
-                          !isBudgetReady
-                            ? "Loading budget data..."
-                            : "Add Honoraria"
-                        }
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
+                      {showActions && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0"
+                          onClick={() => onAddHonoraria(personnel)}
+                          disabled={!isBudgetReady}
+                          title={
+                            !isBudgetReady
+                              ? "Loading budget data..."
+                              : "Add Honoraria"
+                          }
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   </div>
 
@@ -215,6 +224,7 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
                           onDelete={(comp) =>
                             onDeleteHonoraria(personnel, comp.id)
                           }
+                          showActions={showActions}
                         />
                       ))
                     ) : (

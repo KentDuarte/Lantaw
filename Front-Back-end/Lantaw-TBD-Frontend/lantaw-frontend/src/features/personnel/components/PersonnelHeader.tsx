@@ -7,11 +7,13 @@ import { Plus } from "lucide-react";
 interface PersonnelHeaderProps {
   projectName: string;
   onAddPersonnel: () => void;
+  userRole?: string;
 }
 
 export const PersonnelHeader: React.FC<PersonnelHeaderProps> = ({
   projectName,
   onAddPersonnel,
+  userRole,
 }) => {
   return (
     <div className="flex items-center justify-between">
@@ -26,15 +28,17 @@ export const PersonnelHeader: React.FC<PersonnelHeaderProps> = ({
           {projectName}.
         </p>
       </div>
-      <div className="flex gap-2">
-        <Button
-          onClick={onAddPersonnel}
-          className="bg-primary hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Personnel
-        </Button>
-      </div>
+      {userRole !== "Executive" && (
+        <div className="flex gap-2">
+          <Button
+            onClick={onAddPersonnel}
+            className="bg-primary hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Personnel
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

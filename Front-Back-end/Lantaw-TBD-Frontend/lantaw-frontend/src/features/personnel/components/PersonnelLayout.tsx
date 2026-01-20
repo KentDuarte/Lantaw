@@ -5,6 +5,7 @@ import { Accordion } from "../../../components/common/accordion";
 
 // Context
 import { useProject } from "../../../context/ProjectContext";
+import { useAuth } from "../../../context/AuthContext";
 
 // Hooks
 import { usePersonnel } from "../hooks/usePersonnel";
@@ -32,6 +33,7 @@ import type { Compensation } from "../../../types/compensation";
 const PersonnelLayout = () => {
   // Hooks
   const { currentProject } = useProject();
+  const { user } = useAuth();
   const filters = usePersonnelFilters();
 
   const personnel = usePersonnel(currentProject?.id || null);
@@ -262,6 +264,7 @@ const PersonnelLayout = () => {
       <PersonnelHeader
         projectName={currentProject.name}
         onAddPersonnel={handleOpenAddPersonnelModal}
+        userRole={user?.role}
       />
 
       {/* Search and Filters */}
@@ -288,6 +291,7 @@ const PersonnelLayout = () => {
                 onAddHonoraria={handleAddHonoraria}
                 onEditHonoraria={handleEditHonoraria}
                 onDeleteHonoraria={handleDeleteHonoraria}
+                showActions={user?.role !== "Executive"}
               />
             );
           })}

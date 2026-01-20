@@ -68,47 +68,49 @@ export const ObjectiveAccordion: React.FC<ObjectiveAccordionProps> = ({
               </p>
             </div>
 
-            {/* Action Buttons */}
-            {showActions && (
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEditObjective(objective);
-                  }}
-                  className="h-8 w-8 p-0"
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
+            {/* Action Buttons and Dropdown Icon */}
+            <div className="flex items-center gap-3">
+              {showActions && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditObjective?.(objective);
+                    }}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteObjective(objective);
-                  }}
-                  className="h-8 w-8 p-0"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddActivity(objective);
-                  }}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                >
-                  <Plus className="h-4 w-4 mr-1" /> Add Activity
-                </Button>
-                <div className="w-4 h-4 flex items-center justify-center ml-2">
-                  <ChevronDown className="h-4 w-4 transform transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteObjective?.(objective);
+                    }}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddActivity?.(objective);
+                    }}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Add Activity
+                  </Button>
+                </>
+              )}
+              <div className="w-4 h-4 flex items-center justify-center ml-2">
+                <ChevronDown className="h-4 w-4 transform transition-transform duration-200 group-data-[state=open]:rotate-180" />
               </div>
-            )}
+            </div>
           </div>
         </AccordionTrigger>
 

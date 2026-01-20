@@ -11,12 +11,14 @@ interface CompensationItemCardProps {
   item: Compensation;
   onEdit: (item: Compensation) => void;
   onDelete: (item: Compensation) => void;
+  showActions?: boolean;
 }
 
 export const CompensationItemCard: React.FC<CompensationItemCardProps> = ({
   item,
   onEdit,
   onDelete,
+  showActions = true,
 }) => {
   const isHonoraria = item.type?.toLowerCase() === "honoraria";
 
@@ -32,32 +34,34 @@ export const CompensationItemCard: React.FC<CompensationItemCardProps> = ({
         </div>
 
         {/* Action Buttons (Hidden until hover) */}
-        <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(item);
-            }}
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-blue-600"
-          >
-            <Edit className="h-3.5 w-3.5" />
-          </Button>
-          {isHonoraria && (
+        {showActions && (
+          <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
             <Button
               variant="ghost"
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                onDelete(item);
+                onEdit(item);
               }}
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-blue-600"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Edit className="h-3.5 w-3.5" />
             </Button>
-          )}
-        </div>
+            {isHonoraria && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(item);
+                }}
+                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
