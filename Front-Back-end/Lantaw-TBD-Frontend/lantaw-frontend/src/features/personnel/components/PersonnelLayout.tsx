@@ -25,6 +25,8 @@ import { AddPersonnelModal } from "./modals/AddPersonnelModal";
 import { DeletePersonnelModal } from "./modals/DeletePersonnelModal";
 import { EditCompensationModal } from "./modals/EditCompensationModal";
 import { DeleteCompensationModal } from "./modals/DeleteCompensationModal";
+import { SubmitChangeRequestModal } from "../../change-requests/components/SubmitChangeRequestModal";
+import { changeRequestsApi } from "../../change-requests/services/changeRequestsApi";
 
 // Types
 import type { Personnel } from "../../../types/personnel";
@@ -70,6 +72,16 @@ const PersonnelLayout = () => {
     useState(false);
   const [isDeleteCompensationModalOpen, setIsDeleteCompensationModalOpen] =
     useState(false);
+  const [isSubmitChangeRequestModalOpen, setIsSubmitChangeRequestModalOpen] = useState(false);
+
+  // Change request state
+  const [pendingChangeRequest, setPendingChangeRequest] = useState<{
+    changeType: 'PERSONNEL' | 'COMPENSATION' | 'ROLE' | 'DEPARTMENT';
+    operation: 'CREATE' | 'UPDATE' | 'DELETE';
+    entityId?: number | null;
+    currentState?: Record<string, any> | null;
+    proposedChanges: Record<string, any>;
+  } | null>(null);
 
   // Editing states
   const [editingPersonnel, setEditingPersonnel] = useState<Personnel | null>(
@@ -101,7 +113,19 @@ const PersonnelLayout = () => {
     department: number | null;
     employment_status: Personnel["employment_status"];
   }) => {
-    await personnel.addPersonnel(data);
+    if (user?.role === "Project Staff" && currentProject) {
+      setPendingChangeRequest({
+        changeType: 'PERSONNEL',
+        operation: 'CREATE',
+        entityId: null,
+        currentState: null,
+        proposedChanges: data,
+      });
+      setIsSubmitChangeRequestModalOpen(true);
+      setIsAddPersonnelModalOpen(false);
+    } else {
+      await personnel.addPersonnel(data);
+    }
   };
 
   const handleEditPersonnel = async (data: {
@@ -112,15 +136,53 @@ const PersonnelLayout = () => {
     employment_status: Personnel["employment_status"];
   }) => {
     if (!editingPersonnel) return;
-    await personnel.updatePersonnel(editingPersonnel.id, data);
-    setEditingPersonnel(null);
-    setIsAddPersonnelModalOpen(false);
+    
+    if (user?.role === "Project Staff" && currentProject) {
+      setPendingChangeRequest({
+        changeType: 'PERSONNEL',
+        operation: 'UPDATE',
+        entityId: editingPersonnel.id,
+        currentState: {
+          first_name: editingPersonnel.first_name,
+          last_name: editingPersonnel.last_name,
+          role: editingPersonnel.role,
+          department: editingPersonnel.department,
+          employment_status: editingPersonnel.employment_status,
+        },
+        proposedChanges: data,
+      });
+      setIsSubmitChangeRequestModalOpen(true);
+      setIsAddPersonnelModalOpen(false);
+    } else {
+      await personnel.updatePersonnel(editingPersonnel.id, data);
+      setEditingPersonnel(null);
+      setIsAddPersonnelModalOpen(false);
+    }
   };
 
   const handleDeletePersonnel = async () => {
     if (!editingPersonnel) return;
-    await personnel.deletePersonnel(editingPersonnel.id);
-    setEditingPersonnel(null);
+    
+    if (user?.role === "Project Staff" && currentProject) {
+      setPendingChangeRequest({
+        changeType: 'PERSONNEL',
+        operation: 'DELETE',
+        entityId: editingPersonnel.id,
+        currentState: {
+          first_name: editingPersonnel.first_name,
+          last_name: editingPersonnel.last_name,
+          role: editingPersonnel.role,
+          department: editingPersonnel.department,
+          employment_status: editingPersonnel.employment_status,
+        },
+        proposedChanges: {},
+      });
+      setIsSubmitChangeRequestModalOpen(true);
+      setIsDeletePersonnelModalOpen(false);
+    } else {
+      await personnel.deletePersonnel(editingPersonnel.id);
+      setEditingPersonnel(null);
+    }
   };
 
   // Handlers for compensation
@@ -140,18 +202,47 @@ const PersonnelLayout = () => {
         budget_item: data.budget_item || 0,
       };
 
-      if (editingCompensation) {
-        // Edit Mode
-        await updateCompensation(editingCompensation.id, payload);
+      if (user?.role === "Project Staff" && currentProject) {
+        // Show change request modal for Project Staff
+        if (editingCompensation) {
+          // Edit Mode
+          setPendingChangeRequest({
+            changeType: 'COMPENSATION',
+            operation: 'UPDATE',
+            entityId: editingCompensation.id,
+            currentState: {
+              type: editingCompensation.type,
+              budget_item: editingCompensation.budget_item,
+              personnel: editingCompensation.personnel,
+              reason: editingCompensation.reason,
+              amount: editingCompensation.amount,
+              date_effective: editingCompensation.date_effective,
+            },
+            proposedChanges: payload,
+          });
+        } else {
+          // Create Mode
+          setPendingChangeRequest({
+            changeType: 'COMPENSATION',
+            operation: 'CREATE',
+            entityId: null,
+            currentState: null,
+            proposedChanges: payload,
+          });
+        }
+        setIsSubmitChangeRequestModalOpen(true);
+        setIsEditCompensationModalOpen(false);
       } else {
-        // Create Mode
-        await addCompensation(payload);
+        // Admin can save directly
+        if (editingCompensation) {
+          await updateCompensation(editingCompensation.id, payload);
+        } else {
+          await addCompensation(payload);
+        }
+        setIsEditCompensationModalOpen(false);
+        setEditingPersonnel(null);
+        setEditingCompensation(null);
       }
-
-      // Close modal
-      setIsEditCompensationModalOpen(false);
-      setEditingPersonnel(null);
-      setEditingCompensation(null);
     } catch (error) {
       console.error("Error saving compensation", error);
     }
@@ -159,8 +250,28 @@ const PersonnelLayout = () => {
 
   const handleDeleteCompensation = async () => {
     if (!editingCompensation) return;
-    await deleteCompensation(editingCompensation.id);
-    setEditingPersonnel(null);
+    
+    if (user?.role === "Project Staff" && currentProject) {
+      setPendingChangeRequest({
+        changeType: 'COMPENSATION',
+        operation: 'DELETE',
+        entityId: editingCompensation.id,
+        currentState: {
+          type: editingCompensation.type,
+          budget_item: editingCompensation.budget_item,
+          personnel: editingCompensation.personnel,
+          reason: editingCompensation.reason,
+          amount: editingCompensation.amount,
+          date_effective: editingCompensation.date_effective,
+        },
+        proposedChanges: {},
+      });
+      setIsSubmitChangeRequestModalOpen(true);
+      setIsDeleteCompensationModalOpen(false);
+    } else {
+      await deleteCompensation(editingCompensation.id);
+      setEditingPersonnel(null);
+    }
   };
 
   // Add honoraria
@@ -210,12 +321,36 @@ const PersonnelLayout = () => {
   // Role handlers
   // Adapter for creating a role from the modal
   const handleCreateRole = async (name: string) => {
-    return await addRole({ name });
+    if (user?.role === "Project Staff" && currentProject) {
+      setPendingChangeRequest({
+        changeType: 'ROLE',
+        operation: 'CREATE',
+        entityId: null,
+        currentState: null,
+        proposedChanges: { name },
+      });
+      setIsSubmitChangeRequestModalOpen(true);
+      return null;
+    } else {
+      return await addRole({ name });
+    }
   };
 
   // Department handlers
   const handleCreateDepartment = async (name: string) => {
-    return await addDepartment({ name });
+    if (user?.role === "Project Staff" && currentProject) {
+      setPendingChangeRequest({
+        changeType: 'DEPARTMENT',
+        operation: 'CREATE',
+        entityId: null,
+        currentState: null,
+        proposedChanges: { name },
+      });
+      setIsSubmitChangeRequestModalOpen(true);
+      return null;
+    } else {
+      return await addDepartment({ name });
+    }
   };
 
   // Personnel operations
@@ -379,6 +514,29 @@ const PersonnelLayout = () => {
           }}
           onConfirm={handleDeleteCompensation}
           compensation={editingCompensation}
+        />
+      )}
+
+      {/* Change Request Submission Modal */}
+      {pendingChangeRequest && currentProject && (
+        <SubmitChangeRequestModal
+          open={isSubmitChangeRequestModalOpen}
+          onOpenChange={setIsSubmitChangeRequestModalOpen}
+          projectId={currentProject.id}
+          changeType={pendingChangeRequest.changeType}
+          operation={pendingChangeRequest.operation}
+          entityId={pendingChangeRequest.entityId}
+          currentState={pendingChangeRequest.currentState}
+          proposedChanges={pendingChangeRequest.proposedChanges}
+          onSubmit={async (data) => {
+            await changeRequestsApi.create(currentProject.id, data);
+            setPendingChangeRequest(null);
+            // Refresh personnel data
+            await personnel.fetchPersonnel();
+            if (editingPersonnel) {
+              await fetchCompensation();
+            }
+          }}
         />
       )}
     </div>

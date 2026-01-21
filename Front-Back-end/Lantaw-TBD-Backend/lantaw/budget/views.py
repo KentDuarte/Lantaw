@@ -17,8 +17,11 @@ class IsAdminExecutiveOrProjectStaff(permissions.BasePermission):
         
         user = request.user
 
-        if user.role in ["ADMIN", "PROJECT_STAFF"]:
+        if user.role == "ADMIN":
             return True
+        # Project Staff: Read-only access (must use Change Requests for edits)
+        if user.role == "PROJECT_STAFF":
+            return request.method in permissions.SAFE_METHODS
         if user.role == "EXECUTIVE":
             return request.method in permissions.SAFE_METHODS
         return False

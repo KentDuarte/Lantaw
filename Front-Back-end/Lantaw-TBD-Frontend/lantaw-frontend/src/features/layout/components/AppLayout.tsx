@@ -32,9 +32,11 @@ import {
   Eye,
   Plus,
   LogOut,
+  FileText,
 } from "lucide-react";
 import api from "../../../api/client";
 import { useProject } from "../../../context/ProjectContext";
+import { CURRENT_PROJECT } from "../../../api/constants";
 import ProjectModal from "../components/ProjectModal";
 
 interface Project {
@@ -153,6 +155,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { name: "Overview", icon: LayoutDashboard, path: "/" },
     { name: "Activities", icon: Activity, path: "/activities" },
     { name: "Personnel", icon: Users, path: "/personnel" },
+    // Admin-only menu items
+    ...(user?.role === "Admin" ? [{ name: "Change Requests", icon: FileText, path: "/change-requests" }] : []),
     { name: "Profile", icon: UserCircle, path: "/profile" },
   ];
 
@@ -179,27 +183,53 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       if (!user) return;
 
       try {
+        let projectData: Project[] = [];
+        
         // For Executives and Admins, fetch all projects from /api/projects/
         if (user.role === "Executive" || user.role === "Admin") {
           const response = await api.get("/api/projects/");
           // Handle paginated response (Django REST Framework returns { results: [...] })
-          const projectData = Array.isArray(response.data) 
+          projectData = Array.isArray(response.data) 
             ? response.data 
             : (response.data.results || []);
           setProjects(projectData);
-          if (projectData.length > 0) setCurrentProject(projectData[0]);
         }
         // For Project Staff, fetch from user.projects array
         else if (user.role === "Project Staff" && user.projects?.length) {
           const responses = await Promise.all(
             user.projects.map((id) => api.get(`/api/projects/${id}/`))
           );
-          const projectData = responses.map((res) => res.data);
+          projectData = responses.map((res) => res.data);
           setProjects(projectData);
-          if (projectData.length > 0) setCurrentProject(projectData[0]);
         } else {
           // Ensure projects is always an array
           setProjects([]);
+          return;
+        }
+
+        // Restore saved project if it exists and is in the fetched projects
+        if (projectData.length > 0) {
+          // Get saved project from localStorage
+          const savedProjectJson = localStorage.getItem(CURRENT_PROJECT);
+          if (savedProjectJson) {
+            try {
+              const savedProject = JSON.parse(savedProjectJson);
+              // Try to find the saved project in the fetched projects
+              const foundProject = projectData.find(p => p.id === savedProject.id);
+              if (foundProject) {
+                // Update the saved project with fresh data from server
+                setCurrentProject(foundProject);
+                return; // Don't set to first project
+              }
+            } catch (e) {
+              // Invalid JSON in localStorage, ignore and fall through
+            }
+          }
+          // No saved project or saved project not found, use first project
+          // Only set if currentProject is null to avoid overwriting user selection
+          if (!currentProject) {
+            setCurrentProject(projectData[0]);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch projects:", error);
@@ -209,6 +239,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     };
 
     fetchProjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Determine current page title based on route path

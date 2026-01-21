@@ -17,8 +17,13 @@ class IsAdminExecutiveOrProjectStaff(permissions.BasePermission):
         # Read only
         if user.role == "EXECUTIVE":
             return request.method in permissions.SAFE_METHODS
+        # Project Staff: Read-only access (must use Change Requests for edits)
+        # Exception: Project Staff can still create projects (handled in perform_create)
         if user.role == "PROJECT_STAFF":
-            return True  
+            if request.method == "POST":
+                # Allow POST for project creation (Admin assigns Project Staff)
+                return True
+            return request.method in permissions.SAFE_METHODS
         
         return False
 

@@ -7,6 +7,7 @@ import Home from "./pages/Home";
 import Activities from "./pages/Activities";
 import Personnel from "./pages/Personnel";
 import Profile from "./pages/Profile";
+import ChangeRequests from "./pages/ChangeRequests";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { RoleRoute } from "./routes/RoleRoute";
@@ -52,6 +53,14 @@ function App() {
               />
               <Route path="/personnel" element={<Personnel />} />
               <Route path="/profile" element={<Profile />} />
+              <Route
+                path="/change-requests"
+                element={
+                  <RoleRoute allowedRoles={["Admin"]}>
+                    <ChangeRequests />
+                  </RoleRoute>
+                }
+              />
             </Route>
 
             {/* Fallback */}

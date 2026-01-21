@@ -23,9 +23,11 @@ import { DeleteObjectiveModal } from "./modals/DeleteObjectiveModal";
 import { DeleteActivityModal } from "./modals/DeleteActivityModal";
 import { AddExpenseModal } from "./modals/AddExpenseModal";
 import { ProjectStatusModal } from "./modals/ProjectStatusModal";
+import { SubmitChangeRequestModal } from "../../change-requests/components/SubmitChangeRequestModal";
 
 // API
 import { projectsApi } from "../services/activitiesApi";
+import { changeRequestsApi } from "../../change-requests/services/changeRequestsApi";
 
 // Types
 import type { Objective } from "../../../types/objective";
@@ -52,6 +54,16 @@ const ActivitiesLayout = () => {
   const [isDeleteObjectiveModalOpen, setIsDeleteObjectiveModalOpen] =
     useState(false);
   const [isAddExpenseModalOpen, setIsAddExpenseModalOpen] = useState(false);
+  const [isSubmitChangeRequestModalOpen, setIsSubmitChangeRequestModalOpen] = useState(false);
+
+  // Change request state
+  const [pendingChangeRequest, setPendingChangeRequest] = useState<{
+    changeType: 'OBJECTIVE' | 'ACTIVITY';
+    operation: 'CREATE' | 'UPDATE' | 'DELETE';
+    entityId?: number | null;
+    currentState?: Record<string, any> | null;
+    proposedChanges: Record<string, any>;
+  } | null>(null);
 
   // Editing states
   const [editingObjective, setEditingObjective] = useState<Objective | null>(
@@ -120,7 +132,21 @@ const ActivitiesLayout = () => {
     title: string;
     description: string;
   }) => {
-    await activities.createObjective(data);
+    if (user?.role === "Project Staff" && currentProject) {
+      // Show change request modal for Project Staff
+      setPendingChangeRequest({
+        changeType: 'OBJECTIVE',
+        operation: 'CREATE',
+        entityId: null,
+        currentState: null,
+        proposedChanges: data,
+      });
+      setIsSubmitChangeRequestModalOpen(true);
+      setIsObjectiveModalOpen(false);
+    } else {
+      // Admin can create directly
+      await activities.createObjective(data);
+    }
   };
 
   const handleEditObjective = async (data: {
@@ -128,13 +154,49 @@ const ActivitiesLayout = () => {
     description: string;
   }) => {
     if (!editingObjective) return;
-    await activities.updateObjective(editingObjective.id, data);
+    
+    if (user?.role === "Project Staff" && currentProject) {
+      // Show change request modal for Project Staff
+      setPendingChangeRequest({
+        changeType: 'OBJECTIVE',
+        operation: 'UPDATE',
+        entityId: editingObjective.id,
+        currentState: {
+          title: editingObjective.title,
+          description: editingObjective.description,
+        },
+        proposedChanges: data,
+      });
+      setIsSubmitChangeRequestModalOpen(true);
+      setIsObjectiveModalOpen(false);
+    } else {
+      // Admin can update directly
+      await activities.updateObjective(editingObjective.id, data);
+    }
   };
 
   const handleDeleteObjective = async () => {
     if (!editingObjective) return;
-    await activities.deleteObjective(editingObjective.id);
-    setEditingObjective(null);
+    
+    if (user?.role === "Project Staff" && currentProject) {
+      // Show change request modal for Project Staff
+      setPendingChangeRequest({
+        changeType: 'OBJECTIVE',
+        operation: 'DELETE',
+        entityId: editingObjective.id,
+        currentState: {
+          title: editingObjective.title,
+          description: editingObjective.description,
+        },
+        proposedChanges: {},
+      });
+      setIsSubmitChangeRequestModalOpen(true);
+      setIsDeleteObjectiveModalOpen(false);
+    } else {
+      // Admin can delete directly
+      await activities.deleteObjective(editingObjective.id);
+      setEditingObjective(null);
+    }
   };
 
   // Activity operations
@@ -146,7 +208,25 @@ const ActivitiesLayout = () => {
     activity_budget_item: number | null;
   }) => {
     if (!editingObjective) return;
-    await activities.createActivity(editingObjective.id, data);
+    
+    if (user?.role === "Project Staff" && currentProject) {
+      // Show change request modal for Project Staff
+      setPendingChangeRequest({
+        changeType: 'ACTIVITY',
+        operation: 'CREATE',
+        entityId: null,
+        currentState: null,
+        proposedChanges: {
+          ...data,
+          objective: editingObjective.id,
+        },
+      });
+      setIsSubmitChangeRequestModalOpen(true);
+      setIsActivityModalOpen(false);
+    } else {
+      // Admin can create directly
+      await activities.createActivity(editingObjective.id, data);
+    }
   };
 
   const handleEditActivity = async (data: {
@@ -157,43 +237,134 @@ const ActivitiesLayout = () => {
     activity_budget_item: number | null;
   }) => {
     if (!editingObjective || !editingActivity) return;
-    await activities.updateActivity(
-      editingObjective.id,
-      editingActivity.id,
-      data
-    );
-    setEditingActivity(null);
+    
+    if (user?.role === "Project Staff" && currentProject) {
+      // Show change request modal for Project Staff
+      setPendingChangeRequest({
+        changeType: 'ACTIVITY',
+        operation: 'UPDATE',
+        entityId: editingActivity.id,
+        currentState: {
+          title: editingActivity.title,
+          activity_status: editingActivity.activity_status,
+          projected_expense: editingActivity.projected_expense,
+          actual_expense: editingActivity.actual_expense,
+          activity_budget_item: editingActivity.activity_budget_item,
+        },
+        proposedChanges: data,
+      });
+      setIsSubmitChangeRequestModalOpen(true);
+      setIsActivityModalOpen(false);
+    } else {
+      // Admin can update directly
+      await activities.updateActivity(
+        editingObjective.id,
+        editingActivity.id,
+        data
+      );
+      setEditingActivity(null);
+    }
   };
 
   const handleDeleteActivity = async () => {
     if (!editingObjective || !editingActivity) return;
-    await activities.deleteActivity(editingObjective.id, editingActivity.id);
-    setEditingActivity(null);
+    
+    if (user?.role === "Project Staff" && currentProject) {
+      // Show change request modal for Project Staff
+      setPendingChangeRequest({
+        changeType: 'ACTIVITY',
+        operation: 'DELETE',
+        entityId: editingActivity.id,
+        currentState: {
+          title: editingActivity.title,
+          activity_status: editingActivity.activity_status,
+          projected_expense: editingActivity.projected_expense,
+          actual_expense: editingActivity.actual_expense,
+          activity_budget_item: editingActivity.activity_budget_item,
+        },
+        proposedChanges: {},
+      });
+      setIsSubmitChangeRequestModalOpen(true);
+      setIsDeleteActivityModalOpen(false);
+    } else {
+      // Admin can delete directly
+      await activities.deleteActivity(editingObjective.id, editingActivity.id);
+      setEditingActivity(null);
+    }
   };
 
   const handleAddExpense = async (amount: number) => {
     if (!editingObjective || !editingActivity) return;
-    await activities.addExpense(
-      editingObjective.id,
-      editingActivity.id,
-      amount
-    );
-    setEditingActivity(null);
+    
+    if (user?.role === "Project Staff" && currentProject) {
+      // Calculate new actual expense
+      const currentActual = Number(editingActivity.actual_expense || 0);
+      const newActual = currentActual + amount;
+      
+      // Show change request modal for Project Staff
+      setPendingChangeRequest({
+        changeType: 'ACTIVITY',
+        operation: 'UPDATE',
+        entityId: editingActivity.id,
+        currentState: {
+          title: editingActivity.title,
+          activity_status: editingActivity.activity_status,
+          projected_expense: editingActivity.projected_expense,
+          actual_expense: editingActivity.actual_expense,
+          activity_budget_item: editingActivity.activity_budget_item,
+        },
+        proposedChanges: {
+          title: editingActivity.title,
+          activity_status: editingActivity.activity_status,
+          projected_expense: editingActivity.projected_expense,
+          actual_expense: newActual.toString(),
+          activity_budget_item: editingActivity.activity_budget_item,
+        },
+      });
+      setIsSubmitChangeRequestModalOpen(true);
+      setIsAddExpenseModalOpen(false);
+    } else {
+      // Admin can add expense directly
+      await activities.addExpense(
+        editingObjective.id,
+        editingActivity.id,
+        amount
+      );
+      setEditingActivity(null);
+    }
   };
 
   // Project status update
   const handleProjectStatusUpdate = async () => {
     if (!currentProject) return;
 
-    try {
-      const updatedProject = await projectsApi.updateStatus(
-        currentProject.id,
-        projectStatus
-      );
-      setCurrentProject(updatedProject);
+    if (user?.role === "Project Staff") {
+      // Show change request modal for Project Staff
+      setPendingChangeRequest({
+        changeType: 'PROJECT',
+        operation: 'UPDATE',
+        entityId: currentProject.id,
+        currentState: {
+          project_status: currentProject.project_status,
+        },
+        proposedChanges: {
+          project_status: projectStatus,
+        },
+      });
+      setIsSubmitChangeRequestModalOpen(true);
       setIsProjectStatusModalOpen(false);
-    } catch (error) {
-      console.error("Failed to update project status:", error);
+    } else {
+      // Admin can update directly
+      try {
+        const updatedProject = await projectsApi.updateStatus(
+          currentProject.id,
+          projectStatus
+        );
+        setCurrentProject(updatedProject);
+        setIsProjectStatusModalOpen(false);
+      } catch (error) {
+        console.error("Failed to update project status:", error);
+      }
     }
   };
 
@@ -321,6 +492,26 @@ const ActivitiesLayout = () => {
         activity={editingActivity}
         onSubmit={handleAddExpense}
       />
+
+      {/* Change Request Submission Modal */}
+      {pendingChangeRequest && currentProject && (
+        <SubmitChangeRequestModal
+          open={isSubmitChangeRequestModalOpen}
+          onOpenChange={setIsSubmitChangeRequestModalOpen}
+          projectId={currentProject.id}
+          changeType={pendingChangeRequest.changeType}
+          operation={pendingChangeRequest.operation}
+          entityId={pendingChangeRequest.entityId}
+          currentState={pendingChangeRequest.currentState}
+          proposedChanges={pendingChangeRequest.proposedChanges}
+          onSubmit={async (data) => {
+            await changeRequestsApi.create(currentProject.id, data);
+            setPendingChangeRequest(null);
+            // Refresh activities to show updated data
+            await activities.fetchObjectives();
+          }}
+        />
+      )}
     </div>
   );
 };

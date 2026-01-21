@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'personnel',
     'budget',
     'core',
+    'change_requests',
     'django_seed'
 ]
 

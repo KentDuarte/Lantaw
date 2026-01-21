@@ -16,8 +16,12 @@ from projects.views import ProjectViewSet, ProjectMembersViewSet, public_project
 from activities.views import ObjectiveViewSet, ActivityViewSet
 from personnel.views import RoleViewSet, DepartmentViewSet, PersonnelViewSet
 from budget.views import BudgetLineItemViewSet, CompensationViewSet
+from change_requests.views import ChangeRequestViewSet
 
 router = routers.SimpleRouter()
+
+# Change requests (Admin-only top-level endpoint)
+router.register(r'change-requests', ChangeRequestViewSet, basename='change-requests')
 
 # Projects and its nested routes
 router.register(r'projects', ProjectViewSet, basename='project')
@@ -29,6 +33,7 @@ projects_router.register(r'personnel', PersonnelViewSet, basename='project-perso
 projects_router.register(r'members', ProjectMembersViewSet, basename='project-members')
 projects_router.register(r'budget-line-items', BudgetLineItemViewSet, basename='project-budgetlineitems')
 projects_router.register(r'compensations', CompensationViewSet, basename='project-compensations')
+projects_router.register(r'change-requests', ChangeRequestViewSet, basename='project-change-requests')
 
 objectives_router = routers.NestedSimpleRouter(projects_router, r'objectives', lookup='objective')
 objectives_router.register(r'activities', ActivityViewSet, basename='objective-activities')
