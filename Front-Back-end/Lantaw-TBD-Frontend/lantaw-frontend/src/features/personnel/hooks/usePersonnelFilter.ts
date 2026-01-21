@@ -22,10 +22,11 @@ export interface UsePersonnelFiltersReturn {
 const applyFilters = (personnel: Personnel[], filters: PersonnelFilters): Personnel[] => {
     return personnel.filter((person) => {
         // Match personnel with first or last name
+        const searchLower = filters.searchQuery.toLowerCase();
         const matchesSearch =
-            person.first_name.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
-            person.last_name.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
-            person.role_name.toLowerCase().includes(filters.searchQuery.toLowerCase());
+            person.first_name?.toLowerCase().includes(searchLower) ||
+            person.last_name?.toLowerCase().includes(searchLower) ||
+            (person.role_name && person.role_name.toLowerCase().includes(searchLower));
         
         // Match personnel with department_name
         const matchesDepartment =

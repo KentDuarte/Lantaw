@@ -13,8 +13,8 @@ class DepartmentSerializer(serializers.ModelSerializer):
         fields=["id", "name"]
 
 class PersonnelSerializer(serializers.ModelSerializer):
-    role_name = serializers.CharField(source="role.name", read_only=True)
-    department_name = serializers.CharField(source="department.name", read_only=True)
+    role_name = serializers.SerializerMethodField()
+    department_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Personnel
@@ -28,3 +28,11 @@ class PersonnelSerializer(serializers.ModelSerializer):
             "department_name",
             "employment_status",
         ]
+
+    def get_role_name(self, obj):
+        """Safely get role name, handling None case."""
+        return obj.role.name if obj.role else ""
+
+    def get_department_name(self, obj):
+        """Safely get department name, handling None case."""
+        return obj.department.name if obj.department else ""

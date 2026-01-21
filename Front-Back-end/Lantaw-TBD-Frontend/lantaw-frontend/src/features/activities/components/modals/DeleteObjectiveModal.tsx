@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "../../../../components/common/dialog";
 import { Button } from "../../../../components/common/button";
@@ -42,15 +43,14 @@ export const DeleteObjectiveModal: React.FC<DeleteObjectiveModalProps> = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete Objective</DialogTitle>
+          <DialogDescription>
+            This action cannot be undone. All activities under this objective will also be deleted.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           {objectiveTitle && <p className="font-medium">"{objectiveTitle}"</p>}
           <p className="text-muted-foreground">
             Are you sure you want to delete this objective?
-          </p>
-          <p className="text-muted-foreground">
-            This action cannot be undone. All activities under this objective
-            will also be deleted.
           </p>
         </div>
         <DialogFooter>

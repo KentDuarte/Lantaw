@@ -1,9 +1,11 @@
 from rest_framework import viewsets, permissions, status 
+from rest_framework.response import Response
 from .models import Personnel, Role, Department
 from .serializers import PersonnelSerializer, RoleSerializer, DepartmentSerializer
-from rest_framework.exceptions import PermissionDenied
-from projects.models import Project, ProjectMembers
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from projects.models import Project, ProjectMembers, ProjectPersonnel
 from django.shortcuts import get_object_or_404
+from django.db import transaction
 
 # Class Permission based on User Role generalized
 class IsAdminExecutiveOrProjectStaff(permissions.BasePermission):
@@ -119,3 +121,80 @@ class PersonnelViewSet(viewsets.ModelViewSet):
                 projectpersonnel__project__projectmembers__user=user
             )
         return Personnel.objects.none()
+
+    def create(self, request, *args, **kwargs):
+        """Override create to properly handle response after ProjectPersonnel creation."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        
+        # Refresh the personnel object from database with select_related to prefetch relationships
+        # This ensures role and department are properly loaded for serialization
+        personnel = Personnel.objects.select_related('role', 'department').get(pk=serializer.instance.pk)
+        
+        # Create a new serializer instance with the refreshed object
+        response_serializer = self.get_serializer(personnel)
+        headers = self.get_success_headers(response_serializer.data)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    @transaction.atomic
+    def perform_create(self, serializer):
+        """
+        Create Personnel record and ProjectPersonnel relationship.
+        Also validates that role and department belong to the current project.
+        """
+        project_id = self.kwargs.get("project_pk")
+        if not project_id:
+            raise ValidationError({'project': 'Project ID is required.'})
+        
+        # Convert to int if it's a string
+        try:
+            project_id = int(project_id)
+        except (ValueError, TypeError):
+            raise ValidationError({'project': 'Invalid project ID.'})
+        
+        try:
+            project = Project.objects.get(pk=project_id)
+        except Project.DoesNotExist:
+            raise ValidationError({'project': 'Project not found.'})
+        
+        # Validate role and department belong to this project
+        # Extract IDs - handle both integer IDs and object instances
+        role_value = serializer.validated_data.get('role')
+        department_value = serializer.validated_data.get('department')
+        
+        # Convert to ID if it's an object instance (DRF might resolve FK to object)
+        if role_value is not None:
+            role_id = role_value.pk if hasattr(role_value, 'pk') else role_value
+            if not isinstance(role_id, int):
+                # If still not an int, try to convert
+                try:
+                    role_id = int(role_id)
+                except (ValueError, TypeError):
+                    raise ValidationError({'role': 'Invalid role ID.'})
+            try:
+                role = Role.objects.get(pk=role_id, project_id=project_id)
+            except Role.DoesNotExist:
+                raise ValidationError({'role': 'Role not found or does not belong to this project.'})
+        
+        if department_value is not None:
+            department_id = department_value.pk if hasattr(department_value, 'pk') else department_value
+            if not isinstance(department_id, int):
+                # If still not an int, try to convert
+                try:
+                    department_id = int(department_id)
+                except (ValueError, TypeError):
+                    raise ValidationError({'department': 'Invalid department ID.'})
+            try:
+                department = Department.objects.get(pk=department_id, project_id=project_id)
+            except Department.DoesNotExist:
+                raise ValidationError({'department': 'Department not found or does not belong to this project.'})
+        
+        # Create the personnel record
+        personnel = serializer.save()
+        
+        # Create the ProjectPersonnel relationship
+        ProjectPersonnel.objects.get_or_create(
+            personnel=personnel,
+            project=project
+        )

@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "../../../../components/common/dialog";
 import { Button } from "../../../../components/common/button";
@@ -43,12 +44,14 @@ export const DeleteCompensationModal: React.FC<
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Remove {compType} item</DialogTitle>
+          <DialogDescription>
+            This action cannot be undone. The {compType} item will be permanently deleted.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <p className="text-muted-foreground">
             Are you sure you want to delete this {compType} item?
           </p>
-          <p className="text-muted-foreground">This action cannot be undone.</p>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isDeleting}>

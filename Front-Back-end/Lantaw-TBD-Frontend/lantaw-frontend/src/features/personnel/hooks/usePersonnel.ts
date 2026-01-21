@@ -47,7 +47,13 @@ export const usePersonnel = (projectId: number | null): UsePersonnelReturn => {
         setError(null);
         try {
             const data = await personnelApi.getAll(projectId);
-            setPersonnel(data);
+            // Ensure role_name and department_name are set for all personnel
+            const dataWithDefaults = data.map(p => ({
+                ...p,
+                role_name: p.role_name || "",
+                department_name: p.department_name || "",
+            }));
+            setPersonnel(dataWithDefaults);
         } catch (err) {
             const error = err instanceof Error ? err : new Error("Failed to fetch personnel");
             setError(error);
@@ -64,8 +70,23 @@ export const usePersonnel = (projectId: number | null): UsePersonnelReturn => {
         setError(null);
         try {
             const newPersonnel = await personnelApi.create(projectId, data);
-            setPersonnel((prev) => [...prev, newPersonnel]);
-            return newPersonnel; // Make sure to return the data to satisfy the Promise
+            // Ensure role_name and department_name are set (handle null cases)
+            const personnelWithDefaults = {
+                ...newPersonnel,
+                role_name: newPersonnel.role_name || "",
+                department_name: newPersonnel.department_name || "",
+            };
+            // Add to state - use functional update to ensure we're working with latest state
+            setPersonnel((prev) => {
+                // Check if personnel already exists (prevent duplicates)
+                const exists = prev.some(p => p.id === personnelWithDefaults.id);
+                if (exists) {
+                    // Update existing instead of adding duplicate
+                    return prev.map(p => p.id === personnelWithDefaults.id ? personnelWithDefaults : p);
+                }
+                return [...prev, personnelWithDefaults];
+            });
+            return personnelWithDefaults;
         } catch (err) {
             const error = err instanceof Error ? err : new Error("Failed to add personnel");
             setError(error);

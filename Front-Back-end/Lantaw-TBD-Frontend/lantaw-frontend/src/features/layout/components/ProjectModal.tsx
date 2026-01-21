@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "../../../components/common/dialog";
 import { Label } from "../../../components/common/label";
@@ -198,6 +199,11 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
         <DialogHeader>
           {/* Conditional Title */}
           <DialogTitle>{modalTitle}</DialogTitle>
+          <DialogDescription>
+            {isEdit
+              ? "Update the project details below."
+              : "Fill in the details to create a new project."}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

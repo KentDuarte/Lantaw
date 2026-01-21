@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "../../../../components/common/dialog";
 import { Button } from "../../../../components/common/button";
@@ -42,13 +43,15 @@ export const DeleteActivityModal: React.FC<DeleteActivityModalProps> = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete Activity</DialogTitle>
+          <DialogDescription>
+            This action cannot be undone. The activity will be permanently deleted.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           {activityTitle && <p className="font-medium">"{activityTitle}"</p>}
           <p className="text-muted-foreground">
             Are you sure you want to delete this activity?
           </p>
-          <p className="text-muted-foreground">This action cannot be undone.</p>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isDeleting}>

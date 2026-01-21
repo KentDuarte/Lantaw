@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "../../../../components/common/dialog";
 import { Button } from "../../../../components/common/button";
@@ -68,9 +69,11 @@ export const AddPersonnelModal: React.FC<AddPersonnelModalProps> = ({
     employment_status: "ACTIVE" as Personnel["employment_status"],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
+      setError(null); // Clear error when modal opens
       if (personnel) {
         setFormData({
           first_name: personnel.first_name,
@@ -93,21 +96,33 @@ export const AddPersonnelModal: React.FC<AddPersonnelModalProps> = ({
   }, [isOpen, personnel]);
 
   const handleSubmit = async () => {
-    if (!formData.first_name.trim() || !formData.last_name.trim()) return;
+    if (!formData.first_name.trim() || !formData.last_name.trim()) {
+      setError("First name and last name are required");
+      return;
+    }
 
     setIsSubmitting(true);
+    setError(null);
 
     try {
       await onSubmit({
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        role: formData.role,
-        department: formData.department,
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        role: formData.role ?? null,  // Ensure null, not undefined
+        department: formData.department ?? null,  // Ensure null, not undefined
         employment_status: formData.employment_status,
       });
+      // Only close on success
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save personnel:", error);
+      // Display error to user
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.role?.[0] ||
+                          error.response?.data?.department?.[0] ||
+                          error.message || 
+                          "Failed to save personnel. Please try again.";
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -120,6 +135,11 @@ export const AddPersonnelModal: React.FC<AddPersonnelModalProps> = ({
           <DialogTitle>
             {personnel ? "Edit Personnel" : "Add New Personnel"}
           </DialogTitle>
+          <DialogDescription>
+            {personnel
+              ? "Update the personnel information below."
+              : "Fill in the details to add a new personnel member to this project."}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -230,17 +250,23 @@ export const AddPersonnelModal: React.FC<AddPersonnelModalProps> = ({
               </SelectContent>
             </Select>
           </div>
+
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button
             variant="outline"
             onClick={onClose}
-            disabled={isSubmittingMain}
+            disabled={isSubmittingMain || isSubmitting}
           >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmittingMain}>
-            {isSubmittingMain
+          <Button onClick={handleSubmit} disabled={isSubmittingMain || isSubmitting}>
+            {(isSubmittingMain || isSubmitting)
               ? "Saving..."
               : personnel
               ? "Update Personnel"

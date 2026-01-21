@@ -80,7 +80,9 @@ export const ProposedChangesPreview: React.FC<ProposedChangesPreviewProps> = ({
     first_name: "First Name",
     last_name: "Last Name",
     role: "Role",
+    role_name: "Role Name",
     department: "Department",
+    department_name: "Department Name",
     employment_status: "Employment Status",
     
     // Budget fields
@@ -108,6 +110,32 @@ export const ProposedChangesPreview: React.FC<ProposedChangesPreviewProps> = ({
       return null;
     }
 
+    // Define field order for personnel (if it's a personnel change request)
+    const personnelFieldOrder = [
+      "first_name",
+      "last_name",
+      "role_name",
+      "department_name",
+      "employment_status",
+    ];
+
+    // Sort fields: personnel fields first in order, then others
+    const sortedEntries = Object.entries(fields).sort(([keyA], [keyB]) => {
+      const indexA = personnelFieldOrder.indexOf(keyA);
+      const indexB = personnelFieldOrder.indexOf(keyB);
+      
+      // If both are in the order list, sort by their position
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      // If only A is in the order list, it comes first
+      if (indexA !== -1) return -1;
+      // If only B is in the order list, it comes first
+      if (indexB !== -1) return 1;
+      // If neither is in the order list, maintain original order
+      return 0;
+    });
+
     return (
       <div className="space-y-3">
         <h4 className="font-semibold text-sm mb-2">{title}</h4>
@@ -116,15 +144,28 @@ export const ProposedChangesPreview: React.FC<ProposedChangesPreviewProps> = ({
             ? "bg-red-50 border-red-200" 
             : "bg-green-50 border-green-200"
         }`}>
-          {Object.entries(fields).map(([key, value]) => {
+          {sortedEntries.map(([key, value]) => {
             // Skip internal IDs unless it's a reference field
             if (key === "id" || key === "project" || key === "project_id") {
               return null;
             }
 
-            // Handle foreign key references
+            // Skip role/department ID fields when role_name/department_name exist
+            if ((key === "role" && fields.role_name !== undefined) || 
+                (key === "department" && fields.department_name !== undefined) ||
+                (key === "role_id" && fields.role_name !== undefined) ||
+                (key === "department_id" && fields.department_name !== undefined)) {
+              return null;
+            }
+
+            // Handle foreign key references (but skip role_id/department_id if names exist)
             if (key.includes("_id") && typeof value === "number") {
               const displayKey = key.replace("_id", "");
+              // Skip role_id/department_id if we have name versions
+              if ((displayKey === "role" && fields.role_name !== undefined) ||
+                  (displayKey === "department" && fields.department_name !== undefined)) {
+                return null;
+              }
               return (
                 <div key={key}>
                   <Label className="text-xs text-muted-foreground">

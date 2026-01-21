@@ -83,6 +83,22 @@ const PersonnelLayout = () => {
     proposedChanges: Record<string, any>;
   } | null>(null);
 
+  // Helper function to resolve role/department IDs to names
+  const resolvePersonnelFields = (data: {
+    role: number | null;
+    department: number | null;
+    [key: string]: any;
+  }) => {
+    const roleObj = roles.find(r => r.id === data.role);
+    const deptObj = departments.find(d => d.id === data.department);
+    
+    return {
+      ...data,
+      role_name: roleObj?.name || "",
+      department_name: deptObj?.name || "",
+    };
+  };
+
   // Editing states
   const [editingPersonnel, setEditingPersonnel] = useState<Personnel | null>(
     null
@@ -119,12 +135,21 @@ const PersonnelLayout = () => {
         operation: 'CREATE',
         entityId: null,
         currentState: null,
-        proposedChanges: data,
+        proposedChanges: resolvePersonnelFields(data),
       });
       setIsSubmitChangeRequestModalOpen(true);
       setIsAddPersonnelModalOpen(false);
     } else {
-      await personnel.addPersonnel(data);
+      // Admin can add directly
+      // addPersonnel already updates the state optimistically with the server response
+      // Re-throw any errors so the modal can display them
+      try {
+        await personnel.addPersonnel(data);
+        // Modal will close automatically via onClose() in modal's handleSubmit
+      } catch (error) {
+        // Re-throw error so modal can handle it
+        throw error;
+      }
     }
   };
 
@@ -142,14 +167,14 @@ const PersonnelLayout = () => {
         changeType: 'PERSONNEL',
         operation: 'UPDATE',
         entityId: editingPersonnel.id,
-        currentState: {
+        currentState: resolvePersonnelFields({
           first_name: editingPersonnel.first_name,
           last_name: editingPersonnel.last_name,
           role: editingPersonnel.role,
           department: editingPersonnel.department,
           employment_status: editingPersonnel.employment_status,
-        },
-        proposedChanges: data,
+        }),
+        proposedChanges: resolvePersonnelFields(data),
       });
       setIsSubmitChangeRequestModalOpen(true);
       setIsAddPersonnelModalOpen(false);
@@ -168,13 +193,13 @@ const PersonnelLayout = () => {
         changeType: 'PERSONNEL',
         operation: 'DELETE',
         entityId: editingPersonnel.id,
-        currentState: {
+        currentState: resolvePersonnelFields({
           first_name: editingPersonnel.first_name,
           last_name: editingPersonnel.last_name,
           role: editingPersonnel.role,
           department: editingPersonnel.department,
           employment_status: editingPersonnel.employment_status,
-        },
+        }),
         proposedChanges: {},
       });
       setIsSubmitChangeRequestModalOpen(true);

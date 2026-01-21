@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "../../../../components/common/dialog";
 import { Button } from "../../../../components/common/button";
@@ -46,6 +47,9 @@ export const DeletePersonnelModal: React.FC<DeletePersonnelModalProps> = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Remove Personnel</DialogTitle>
+          <DialogDescription>
+            This action cannot be undone. The personnel will be permanently removed from the project.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           {personnelFullName && (
@@ -54,7 +58,6 @@ export const DeletePersonnelModal: React.FC<DeletePersonnelModalProps> = ({
           <p className="text-muted-foreground">
             Are you sure you want to remove this personnel?
           </p>
-          <p className="text-muted-foreground">This action cannot be undone.</p>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isDeleting}>
