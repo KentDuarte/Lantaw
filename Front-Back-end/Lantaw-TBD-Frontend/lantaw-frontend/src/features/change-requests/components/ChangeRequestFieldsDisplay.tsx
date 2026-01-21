@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Label } from "../../../components/common/label";
 import { Badge } from "../../../components/common/badge";
 import type { ChangeRequest } from "../../../types/changeRequest";
 import { formatCurrency } from "../../../utils/formatHelpers";
+import type { Personnel } from "../../../types/personnel";
+import api from "../../../api/client";
 
 interface ChangeRequestFieldsDisplayProps {
   changeRequest: ChangeRequest;
@@ -11,7 +13,38 @@ interface ChangeRequestFieldsDisplayProps {
 export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProps> = ({
   changeRequest,
 }) => {
-  const { change_type, operation, current_state, proposed_changes } = changeRequest;
+  const { change_type, operation, current_state, proposed_changes, project } = changeRequest;
+  const [personnelList, setPersonnelList] = useState<Personnel[]>([]);
+
+  // Fetch personnel list for resolving IDs to names
+  useEffect(() => {
+    const fetchPersonnel = async () => {
+      if (change_type === 'COMPENSATION' && project) {
+        try {
+          const response = await api.get(`/api/projects/${project}/personnel/`);
+          const personnelData = Array.isArray(response.data) 
+            ? response.data 
+            : (response.data.results || []);
+          setPersonnelList(personnelData);
+        } catch (err) {
+          console.error("Failed to fetch personnel:", err);
+          setPersonnelList([]);
+        }
+      }
+    };
+    fetchPersonnel();
+  }, [change_type, project]);
+
+  // Helper to resolve personnel ID to full name
+  const getPersonnelName = (personnelId: number | string | null | undefined): string => {
+    if (!personnelId) return "Not set";
+    const id = typeof personnelId === 'string' ? parseInt(personnelId) : personnelId;
+    const person = personnelList.find(p => p.id === id);
+    if (person) {
+      return `${person.first_name} ${person.last_name}`.trim();
+    }
+    return `#${id}`;
+  };
 
   // Render field value based on type
   const renderFieldValue = (key: string, value: any): React.ReactNode => {
@@ -147,6 +180,11 @@ export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProp
                 return null;
               }
 
+              // Skip personnel ID when personnel_name exists (for compensation)
+              if (key === "personnel" && fields.personnel_name !== undefined && change_type === 'COMPENSATION') {
+                return null;
+              }
+
               // Handle foreign key references (but skip role_id/department_id if names exist)
               if (key.includes("_id") && typeof value === "number") {
                 const displayKey = key.replace("_id", "");
@@ -166,6 +204,30 @@ export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProp
               }
 
               const label = fieldLabels[key] || key.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+              
+              // Special handling for personnel_name field in compensation (prefer name over ID)
+              if (key === "personnel_name" && change_type === 'COMPENSATION') {
+                return (
+                  <div key={key}>
+                    <Label className="text-xs text-muted-foreground">Personnel</Label>
+                    <div className="text-sm font-medium mt-1">
+                      {value || "Not set"}
+                    </div>
+                  </div>
+                );
+              }
+              
+              // Fallback: if personnel_name doesn't exist, try to resolve personnel ID
+              if (key === "personnel" && change_type === 'COMPENSATION' && fields.personnel_name === undefined) {
+                return (
+                  <div key={key}>
+                    <Label className="text-xs text-muted-foreground">{label}</Label>
+                    <div className="text-sm font-medium mt-1">
+                      {getPersonnelName(value)}
+                    </div>
+                  </div>
+                );
+              }
               
               return (
                 <div key={key}>

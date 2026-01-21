@@ -173,6 +173,7 @@ export const SubmitChangeRequestModal: React.FC<SubmitChangeRequestModalProps> =
                 changeType={changeType}
                 operation={operation}
                 currentState={currentState}
+                projectId={projectId}
               />
             </div>
           </div>

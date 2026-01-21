@@ -46,6 +46,37 @@ export const ChangeRequestCard: React.FC<ChangeRequestCardProps> = ({
     ? changeRequest.description.substring(0, 150) + '...'
     : changeRequest.description;
 
+  // Generate auto title based on operation and change type
+  const getAutoTitle = () => {
+    // Special case: Check if it's an expense entry addition
+    if (changeRequest.change_type === 'ACTIVITY' && 
+        changeRequest.operation === 'UPDATE' &&
+        changeRequest.proposed_changes &&
+        changeRequest.current_state) {
+      const currentExpense = Number(changeRequest.current_state.actual_expense || 0);
+      const proposedExpense = Number(changeRequest.proposed_changes.actual_expense || 0);
+      
+      // Check if only actual_expense changed and it increased
+      const onlyExpenseChanged = Object.keys(changeRequest.proposed_changes).every(key => 
+        key === 'actual_expense' || 
+        changeRequest.proposed_changes[key] === changeRequest.current_state[key]
+      );
+      
+      if (onlyExpenseChanged && proposedExpense > currentExpense) {
+        return 'Adding Expense Entry';
+      }
+    }
+    
+    const operationMap: Record<string, string> = {
+      CREATE: 'Adding',
+      UPDATE: 'Updating',
+      DELETE: 'Deleting',
+    };
+    
+    const operationText = operationMap[changeRequest.operation] || 'Modifying';
+    return `${operationText} ${changeTypeName}`;
+  };
+
   // Get entity reference for UPDATE/DELETE
   const getEntityReference = () => {
     if (changeRequest.operation === 'CREATE') return null;
@@ -56,6 +87,7 @@ export const ChangeRequestCard: React.FC<ChangeRequestCardProps> = ({
   };
 
   const entityRef = getEntityReference();
+  const autoTitle = getAutoTitle();
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -83,7 +115,7 @@ export const ChangeRequestCard: React.FC<ChangeRequestCardProps> = ({
             {/* Title/Description */}
             <div>
               <h3 className="font-semibold text-base mb-1">
-                {changeRequest.description.split('\n')[0]}
+                {autoTitle}
               </h3>
               {entityRef && (
                 <p className="text-sm text-muted-foreground">

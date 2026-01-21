@@ -227,10 +227,22 @@ const PersonnelLayout = () => {
         budget_item: data.budget_item || 0,
       };
 
+      // Helper to resolve personnel ID to name
+      const getPersonnelName = (personnelId: number): string => {
+        const person = personnel.find(p => p.id === personnelId);
+        if (person) {
+          return `${person.first_name} ${person.last_name}`.trim();
+        }
+        return "";
+      };
+
       if (user?.role === "Project Staff" && currentProject) {
         // Show change request modal for Project Staff
         if (editingCompensation) {
-          // Edit Mode
+          // Edit Mode - resolve personnel names
+          const currentPersonnelName = getPersonnelName(editingCompensation.personnel);
+          const proposedPersonnelName = getPersonnelName(data.personnel);
+          
           setPendingChangeRequest({
             changeType: 'COMPENSATION',
             operation: 'UPDATE',
@@ -239,20 +251,29 @@ const PersonnelLayout = () => {
               type: editingCompensation.type,
               budget_item: editingCompensation.budget_item,
               personnel: editingCompensation.personnel,
+              personnel_name: currentPersonnelName,
               reason: editingCompensation.reason,
               amount: editingCompensation.amount,
               date_effective: editingCompensation.date_effective,
             },
-            proposedChanges: payload,
+            proposedChanges: {
+              ...payload,
+              personnel_name: proposedPersonnelName,
+            },
           });
         } else {
-          // Create Mode
+          // Create Mode - resolve personnel name
+          const proposedPersonnelName = getPersonnelName(data.personnel);
+          
           setPendingChangeRequest({
             changeType: 'COMPENSATION',
             operation: 'CREATE',
             entityId: null,
             currentState: null,
-            proposedChanges: payload,
+            proposedChanges: {
+              ...payload,
+              personnel_name: proposedPersonnelName,
+            },
           });
         }
         setIsSubmitChangeRequestModalOpen(true);
@@ -276,7 +297,18 @@ const PersonnelLayout = () => {
   const handleDeleteCompensation = async () => {
     if (!editingCompensation) return;
     
+    // Helper to resolve personnel ID to name
+    const getPersonnelName = (personnelId: number): string => {
+      const person = personnel.find(p => p.id === personnelId);
+      if (person) {
+        return `${person.first_name} ${person.last_name}`.trim();
+      }
+      return "";
+    };
+    
     if (user?.role === "Project Staff" && currentProject) {
+      const personnelName = getPersonnelName(editingCompensation.personnel);
+      
       setPendingChangeRequest({
         changeType: 'COMPENSATION',
         operation: 'DELETE',
@@ -285,6 +317,7 @@ const PersonnelLayout = () => {
           type: editingCompensation.type,
           budget_item: editingCompensation.budget_item,
           personnel: editingCompensation.personnel,
+          personnel_name: personnelName,
           reason: editingCompensation.reason,
           amount: editingCompensation.amount,
           date_effective: editingCompensation.date_effective,

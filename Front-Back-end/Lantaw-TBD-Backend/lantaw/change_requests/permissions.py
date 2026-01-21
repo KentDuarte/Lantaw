@@ -61,13 +61,34 @@ class CanSubmitChangeRequest(permissions.BasePermission):
             return True
         
         # For Project Staff, check if they're assigned to the project
-        if request.user.role == "PROJECT_STAFF" and request.method == 'POST':
-            project_id = request.data.get('project') or view.kwargs.get('project_pk')
-            if project_id:
-                return ProjectMembers.objects.filter(
-                    project_id=project_id,
-                    user=request.user
-                ).exists()
+        if request.user.role == "PROJECT_STAFF":
+            # Allow GET requests (viewing)
+            if request.method in ['GET', 'HEAD', 'OPTIONS']:
+                return True
+            
+            # For POST (create), check project assignment
+            if request.method == 'POST':
+                # Try to get project_id from various sources
+                project_id = (
+                    view.kwargs.get('project_pk') or  # Nested router
+                    request.data.get('project') or     # Request body
+                    None
+                )
+                
+                if project_id:
+                    # Convert to int if it's a string
+                    try:
+                        project_id = int(project_id)
+                    except (ValueError, TypeError):
+                        return False
+                    
+                    return ProjectMembers.objects.filter(
+                        project_id=project_id,
+                        user=request.user
+                    ).exists()
+                else:
+                    # If no project_id found, deny (project is required)
+                    return False
         
         return False
 

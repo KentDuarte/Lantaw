@@ -12,6 +12,7 @@ import { TextArea } from "../../../../components/common/textarea";
 import { Label } from "../../../../components/common/label";
 import { AlertTriangle } from "lucide-react";
 import type { ChangeRequest } from "../../../../types/changeRequest";
+import { getChangeTypeDisplayName } from "../../utils/statusHelpers";
 
 interface RejectChangeRequestModalProps {
   open: boolean;
@@ -55,11 +56,43 @@ export const RejectChangeRequestModal: React.FC<RejectChangeRequestModalProps> =
 
   if (!changeRequest) return null;
 
+  // Generate auto title based on operation and change type
+  const getAutoTitle = () => {
+    // Special case: Check if it's an expense entry addition
+    if (changeRequest.change_type === 'ACTIVITY' && 
+        changeRequest.operation === 'UPDATE' &&
+        changeRequest.proposed_changes &&
+        changeRequest.current_state) {
+      const currentExpense = Number(changeRequest.current_state.actual_expense || 0);
+      const proposedExpense = Number(changeRequest.proposed_changes.actual_expense || 0);
+      
+      // Check if only actual_expense changed and it increased
+      const onlyExpenseChanged = Object.keys(changeRequest.proposed_changes).every(key => 
+        key === 'actual_expense' || 
+        changeRequest.proposed_changes[key] === changeRequest.current_state[key]
+      );
+      
+      if (onlyExpenseChanged && proposedExpense > currentExpense) {
+        return 'Reject Adding Expense Entry';
+      }
+    }
+    
+    const operationMap: Record<string, string> = {
+      CREATE: 'Adding',
+      UPDATE: 'Updating',
+      DELETE: 'Deleting',
+    };
+    
+    const changeTypeName = getChangeTypeDisplayName(changeRequest.change_type);
+    const operationText = operationMap[changeRequest.operation] || 'Modifying';
+    return `Reject ${operationText} ${changeTypeName}`;
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Reject Change Request</DialogTitle>
+          <DialogTitle>{getAutoTitle()}</DialogTitle>
           <DialogDescription>
             Please provide a reason for rejecting this change request. This will help the Project Staff understand why the request was not approved.
           </DialogDescription>
