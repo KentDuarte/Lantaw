@@ -175,52 +175,57 @@ export const ChangeRequestCard: React.FC<ChangeRequestCardProps> = ({
           </div>
 
           {/* Actions */}
-          {showActions && (
-            <div className="flex gap-2 flex-shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewDetails(changeRequest);
-                }}
-                className="h-8"
-              >
-                <Eye className="h-3 w-3 mr-1" />
-                View
-              </Button>
-              {!isProcessed && onApprove && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onApprove(changeRequest);
-                  }}
-                  className="h-8 bg-green-500 hover:bg-green-600"
-                  disabled={isProcessed}
-                >
-                  <Check className="h-3 w-3 mr-1" />
-                  Approve
-                </Button>
-              )}
-              {!isProcessed && onReject && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onReject(changeRequest);
-                  }}
-                  className="h-8"
-                  disabled={isProcessed}
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Reject
-                </Button>
-              )}
-            </div>
-          )}
+          <div className="flex gap-2 flex-shrink-0">
+            {/* View button - always visible */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewDetails(changeRequest);
+              }}
+              className="h-8"
+            >
+              <Eye className="h-3 w-3 mr-1" />
+              View
+            </Button>
+            
+            {/* Approve/Reject buttons - only for admins */}
+            {showActions && (
+              <>
+                {!isProcessed && onApprove && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onApprove(changeRequest);
+                    }}
+                    className="h-8 bg-green-500 hover:bg-green-600"
+                    disabled={isProcessed}
+                  >
+                    <Check className="h-3 w-3 mr-1" />
+                    Approve
+                  </Button>
+                )}
+                {!isProcessed && onReject && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onReject(changeRequest);
+                    }}
+                    className="h-8"
+                    disabled={isProcessed}
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Reject
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </CardHeader>
     </Card>

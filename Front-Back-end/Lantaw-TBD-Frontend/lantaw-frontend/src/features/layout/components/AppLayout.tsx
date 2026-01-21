@@ -155,8 +155,10 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { name: "Overview", icon: LayoutDashboard, path: "/" },
     { name: "Activities", icon: Activity, path: "/activities" },
     { name: "Personnel", icon: Users, path: "/personnel" },
-    // Admin-only menu items
-    ...(user?.role === "Admin" ? [{ name: "Change Requests", icon: FileText, path: "/change-requests" }] : []),
+    // Change Requests available for Admin and Project Staff
+    ...(user?.role === "Admin" || user?.role === "Project Staff" 
+      ? [{ name: "Change Requests", icon: FileText, path: "/change-requests" }] 
+      : []),
     { name: "Profile", icon: UserCircle, path: "/profile" },
   ];
 

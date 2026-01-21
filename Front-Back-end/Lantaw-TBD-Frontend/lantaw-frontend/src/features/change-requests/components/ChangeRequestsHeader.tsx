@@ -98,8 +98,8 @@ export const ChangeRequestsHeader: React.FC<ChangeRequestsHeaderProps> = ({
                 </SelectContent>
               </Select>
 
-              {/* Project Filter (Admin only) */}
-              {isAdmin && projects.length > 0 && (
+              {/* Project Filter (Admin and Project Staff) */}
+              {projects.length > 0 && (
                 <Select
                   value={filters.filters.project?.toString() || "all"}
                   onValueChange={(value) => filters.setProjectFilter(value === "all" ? undefined : parseInt(value))}

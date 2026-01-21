@@ -56,7 +56,7 @@ function App() {
               <Route
                 path="/change-requests"
                 element={
-                  <RoleRoute allowedRoles={["Admin"]}>
+                  <RoleRoute allowedRoles={["Admin", "Project Staff"]}>
                     <ChangeRequests />
                   </RoleRoute>
                 }

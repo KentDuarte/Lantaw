@@ -49,13 +49,9 @@ export const useChangeRequests = (projectId?: number | null): UseChangeRequestsR
           data = await changeRequestsApi.getAllForAdmin(filters);
         }
       } else {
-        // Project Staff: fetch from specific project or current project
-        const targetProjectId = specificProjectId || projectId;
-        if (!targetProjectId) {
-          setChangeRequests([]);
-          return;
-        }
-        data = await changeRequestsApi.getAll(targetProjectId, filters);
+        // Project Staff: use top-level endpoint which filters by submitted_by automatically
+        // This ensures they only see their own requests
+        data = await changeRequestsApi.getAllForAdmin(filters);
       }
       
       setChangeRequests(data);

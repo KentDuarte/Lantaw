@@ -23,6 +23,7 @@ export const ChangeRequestsLayout: React.FC<ChangeRequestsLayoutProps> = ({
 }) => {
   const { user } = useAuth();
   const isAdmin = user?.role === "Admin";
+  const isProjectStaff = user?.role === "Project Staff";
   const changeRequests = useChangeRequests(projectId);
   const filters = useChangeRequestFilters();
 
@@ -32,25 +33,38 @@ export const ChangeRequestsLayout: React.FC<ChangeRequestsLayoutProps> = ({
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
 
-  // Fetch projects for Admin filter
+  // Fetch projects for Admin and Project Staff filters
   useEffect(() => {
-    if (isAdmin) {
-      const fetchProjects = async () => {
-        try {
+    const fetchProjects = async () => {
+      try {
+        let projectData: Project[] = [];
+        
+        if (isAdmin) {
+          // Admin: fetch all projects
           const response = await api.get("/api/projects/");
           // Handle paginated response (Django REST Framework returns { results: [...] })
-          const projectData = Array.isArray(response.data) 
+          projectData = Array.isArray(response.data) 
             ? response.data 
             : (response.data.results || []);
-          setProjects(projectData);
-        } catch (err) {
-          console.error("Failed to fetch projects:", err);
-          setProjects([]);
+        } else if (isProjectStaff && user?.projects?.length) {
+          // Project Staff: fetch only assigned projects
+          const responses = await Promise.all(
+            user.projects.map((id) => api.get(`/api/projects/${id}/`))
+          );
+          projectData = responses.map((res) => res.data);
         }
-      };
+        
+        setProjects(projectData);
+      } catch (err) {
+        console.error("Failed to fetch projects:", err);
+        setProjects([]);
+      }
+    };
+    
+    if (isAdmin || isProjectStaff) {
       fetchProjects();
     }
-  }, [isAdmin]);
+  }, [isAdmin, isProjectStaff, user?.projects]);
 
   // Refetch when filters change
   useEffect(() => {
