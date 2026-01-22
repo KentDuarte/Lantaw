@@ -203,6 +203,11 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           );
           projectData = responses.map((res) => res.data);
           setProjects(projectData);
+        } else if (user.role === "Project Staff") {
+          // Project Staff with no projects - clear current project and set empty array
+          setProjects([]);
+          setCurrentProject(null);
+          return;
         } else {
           // Ensure projects is always an array
           setProjects([]);
@@ -350,41 +355,41 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                       </>
                     )}
 
-                    {/* Project Modal */}
-                    <ProjectModal
-                      open={isCreateProjectModalOpen}
-                      onOpenChange={setIsCreateProjectModalOpen}
-                      formData={createProjectForm}
-                      setFormData={setCreateProjectForm}
-                      onSubmit={handleCreateProject}
-                      checkStaffExists={checkStaffExists}
-                    />
-
                     {/* Dynamically Render User's Projects */}
-                    {projects.map((project) => (
-                      <SidebarMenuItem key={project.id}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={currentProject?.id === project.id}
-                          tooltip={project.name}
-                        >
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-start text-xs"
-                            onClick={() => setCurrentProject(project)}
-                          >
-                            <div
-                              className={`w-2 h-2 rounded-full ${getProjectStatusColor(
-                                project.project_status
-                              )} flex-shrink-0`}
-                            />
-                            <span className="truncate group-data-[collapsible=icon]:hidden">
-                              {project.name}
-                            </span>
-                          </Button>
+                    {projects.length === 0 && user?.role === "Project Staff" ? (
+                      <SidebarMenuItem>
+                        <SidebarMenuButton disabled tooltip="No project">
+                          <span className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+                            No project
+                          </span>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
-                    ))}
+                    ) : (
+                      projects.map((project) => (
+                        <SidebarMenuItem key={project.id}>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={currentProject?.id === project.id}
+                            tooltip={project.name}
+                          >
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start text-xs"
+                              onClick={() => setCurrentProject(project)}
+                            >
+                              <div
+                                className={`w-2 h-2 rounded-full ${getProjectStatusColor(
+                                  project.project_status
+                                )} flex-shrink-0`}
+                              />
+                              <span className="truncate group-data-[collapsible=icon]:hidden">
+                                {project.name}
+                              </span>
+                            </Button>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))
+                    )}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </CollapsibleContent>

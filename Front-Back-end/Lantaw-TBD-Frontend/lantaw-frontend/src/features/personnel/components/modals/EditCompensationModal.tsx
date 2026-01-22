@@ -27,6 +27,7 @@ interface EditCompensationModalProps {
   compensation: Compensation | null; // null = create, existing = edit
   personnel: Personnel;
   defaultBudgetItemId: number | null;
+  defaultType?: "SALARY" | "HONORARIA" | null; // Default type when creating new compensation
 
   // Actions
   onSubmit: (data: {
@@ -45,6 +46,7 @@ export const EditCompensationModal: React.FC<EditCompensationModalProps> = ({
   compensation,
   personnel,
   defaultBudgetItemId,
+  defaultType = null,
   onSubmit,
 }) => {
   const [formData, setFormData] = useState({
@@ -57,6 +59,7 @@ export const EditCompensationModal: React.FC<EditCompensationModalProps> = ({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Sync state when modal opens
   useEffect(() => {
@@ -72,7 +75,7 @@ export const EditCompensationModal: React.FC<EditCompensationModalProps> = ({
         });
       } else {
         setFormData({
-          type: "HONORARIA",
+          type: defaultType || "HONORARIA",
           budget_item: defaultBudgetItemId,
           personnel: personnel?.id, // Auto-assign to the current personnel
           reason: "",
@@ -80,25 +83,28 @@ export const EditCompensationModal: React.FC<EditCompensationModalProps> = ({
           date_effective: new Date().toISOString().split("T")[0],
         });
       }
+      // Clear error when modal opens
+      setError(null);
     }
-  }, [isOpen, compensation, personnel, defaultBudgetItemId]);
+  }, [isOpen, compensation, personnel, defaultBudgetItemId, defaultType]);
 
   const handleSubmit = async () => {
     console.log("Submitting Form Data:", formData);
+    setError(null);
+    
     // Basic Validation
-    if (
-      !formData.amount ||
-      parseFloat(formData.amount) <= 0 ||
-      !formData.budget_item ||
-      !formData.personnel
-    ) {
-      // 2. Log here to confirm if validation is blocking you
-      console.warn("Validation Failed!", {
-        hasAmount: !!formData.amount,
-        amountPositive: parseFloat(formData.amount) > 0,
-        hasBudgetItem: !!formData.budget_item, // Check this specific one
-        hasPersonnel: !!formData.personnel,
-      });
+    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+      setError("Please enter a valid amount greater than 0");
+      return;
+    }
+    
+    if (!formData.budget_item) {
+      setError("Budget item is required. Please ensure the budget is loaded.");
+      return;
+    }
+    
+    if (!formData.personnel) {
+      setError("Personnel is required");
       return;
     }
 
@@ -107,15 +113,18 @@ export const EditCompensationModal: React.FC<EditCompensationModalProps> = ({
     try {
       await onSubmit({
         type: formData.type,
-        budget_item: formData.budget_item,
-        personnel: formData.personnel,
-        reason: formData.reason,
+        budget_item: formData.budget_item!,
+        personnel: formData.personnel!,
+        reason: formData.reason || null,
         amount: parseFloat(formData.amount), // Convert back to number
         date_effective: formData.date_effective,
       });
+      setError(null);
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save compensation item:", error);
+      setError(error?.message || "Failed to save compensation. Please try again.");
+      // Don't close modal on error - let user see the error and try again
     } finally {
       setIsSubmitting(false);
     }
@@ -131,6 +140,13 @@ export const EditCompensationModal: React.FC<EditCompensationModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-800">
+              {error}
+            </div>
+          )}
+          
           {/* Type Selection */}
           <div>
             <Label htmlFor="item-type" className="mb-2">

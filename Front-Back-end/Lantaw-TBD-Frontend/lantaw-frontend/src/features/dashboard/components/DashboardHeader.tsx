@@ -22,9 +22,9 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   return (
     <div className="flex items-start justify-between">
       <div className="flex-1">
-        <h1 className="mb-2 text-[24px] font-bold font-[Instrument_Sans]">{projectName}</h1>
+        <h1 className="mb-2 text-[24px] font-bold">{projectName}</h1>
         {projectLeader && (
-          <p className="mb-2 text-[16px] font-bold font-[Instrument_Sans]">
+          <p className="mb-2 text-[16px] font-bold">
             Project Leader: {projectLeader}
           </p>
         )}

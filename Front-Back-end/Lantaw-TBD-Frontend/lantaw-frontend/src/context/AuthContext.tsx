@@ -146,6 +146,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     fetchUserProfile,
   ]);
 
+  // Listen for token refresh events from API interceptor
+  useEffect(() => {
+    const handleTokenRefresh = (event: CustomEvent) => {
+      const newAccessToken = event.detail?.access;
+      if (newAccessToken) {
+        setAccessToken(newAccessToken);
+        // Re-fetch user profile with new token
+        fetchUserProfile(newAccessToken);
+      }
+    };
+
+    window.addEventListener('tokenRefreshed', handleTokenRefresh as EventListener);
+    return () => {
+      window.removeEventListener('tokenRefreshed', handleTokenRefresh as EventListener);
+    };
+  }, [fetchUserProfile]);
+
   // Persist tokens to localStorage
   useEffect(() => {
     if (accessToken) localStorage.setItem("access", accessToken);

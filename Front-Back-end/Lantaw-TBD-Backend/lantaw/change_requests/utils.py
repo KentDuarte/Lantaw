@@ -196,7 +196,7 @@ def _create_budget_item(project, proposed_changes):
 
 
 def _create_compensation(project, proposed_changes):
-    """Create a new Compensation."""
+    """Create a new Compensation, or update if one already exists."""
     type_val = proposed_changes.get('type')
     budget_item_id = proposed_changes.get('budget_item')
     personnel_id = proposed_changes.get('personnel')
@@ -214,10 +214,19 @@ def _create_compensation(project, proposed_changes):
     # Validate personnel exists
     personnel = get_object_or_404(Personnel, pk=personnel_id)
     
-    # Check uniqueness (type + personnel)
-    if Compensation.objects.filter(type=type_val, personnel=personnel).exists():
-        raise ValidationError(f"Compensation with type {type_val} already exists for this personnel")
+    # Check if compensation already exists (type + personnel is unique)
+    existing_compensation = Compensation.objects.filter(type=type_val, personnel=personnel).first()
     
+    if existing_compensation:
+        # Update existing compensation instead of creating a new one
+        existing_compensation.budget_item_id = budget_item_id
+        existing_compensation.reason = reason
+        existing_compensation.amount = amount
+        existing_compensation.date_effective = date_effective
+        existing_compensation.save()
+        return existing_compensation
+    
+    # Create new compensation if it doesn't exist
     compensation = Compensation.objects.create(
         type=type_val,
         budget_item_id=budget_item_id,

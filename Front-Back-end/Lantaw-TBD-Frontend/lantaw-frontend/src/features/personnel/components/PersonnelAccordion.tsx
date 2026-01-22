@@ -29,9 +29,11 @@ interface PersonnelAccordionProps {
   onDeletePersonnel: (personnel: Personnel) => void;
   onEditSalary: (personnel: Personnel, compensationId: number) => void;
   onDeleteSalary: (personnel: Personnel, compensationId: number) => void;
+  onAddSalary?: (personnel: Personnel) => void;
   onAddHonoraria: (personnel: Personnel) => void;
   onEditHonoraria: (personnel: Personnel, compensationId: number) => void;
   onDeleteHonoraria: (personnel: Personnel, compensationId: number) => void;
+  onAddCompensation?: (personnel: Personnel) => void;
   showActions?: boolean;
 }
 
@@ -45,9 +47,11 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
   onDeletePersonnel,
   onEditSalary,
   onDeleteSalary,
+  onAddSalary,
   onAddHonoraria,
   onEditHonoraria,
   onDeleteHonoraria,
+  onAddCompensation,
   showActions = true,
 }) => {
   const salary = compensations.filter((c) => c.type === "SALARY");
@@ -149,8 +153,26 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
 
             {/* Empty State (No Data) */}
             {!isLoading && compensations.length === 0 && (
-              <div className="py-6 text-center text-sm text-muted-foreground">
-                No compensations added yet.
+              <div className="py-6 text-center space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  No compensations added yet.
+                </p>
+                {showActions && onAddCompensation && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onAddCompensation(personnel)}
+                    disabled={!isBudgetReady}
+                    title={
+                      !isBudgetReady
+                        ? "Loading budget data..."
+                        : "Add Compensation"
+                    }
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Compensation
+                  </Button>
+                )}
               </div>
             )}
 
@@ -161,9 +183,27 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-medium text-sm">Salary</h4>
-                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
-                      Total: ₱{getTotal(salary).toLocaleString()}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
+                        Total: ₱{getTotal(salary).toLocaleString()}
+                      </span>
+                      {showActions && onAddSalary && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0"
+                          onClick={() => onAddSalary(personnel)}
+                          disabled={!isBudgetReady}
+                          title={
+                            !isBudgetReady
+                              ? "Loading budget data..."
+                              : "Add Salary"
+                          }
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-2">

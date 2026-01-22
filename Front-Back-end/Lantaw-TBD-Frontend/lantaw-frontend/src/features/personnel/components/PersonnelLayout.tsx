@@ -105,6 +105,9 @@ const PersonnelLayout = () => {
   );
   const [editingCompensation, setEditingCompensation] =
     useState<Compensation | null>(null);
+  const [defaultCompensationType, setDefaultCompensationType] = useState<
+    "SALARY" | "HONORARIA" | null
+  >(null);
 
   // Handlers for personnel
   const handleOpenAddPersonnelModal = () => {
@@ -213,23 +216,28 @@ const PersonnelLayout = () => {
   // Handlers for compensation
   const handleSaveCompensation = async (data: {
     type: Compensation["type"];
-    budget_item: number | null;
+    budget_item: number;
     personnel: number;
     reason: string | null;
     amount: number;
     date_effective: string;
   }) => {
     try {
+      // Ensure budget_item is valid (not null or 0)
+      if (!data.budget_item || data.budget_item === 0) {
+        throw new Error("Budget item is required");
+      }
+
       const payload = {
         ...data,
         amount: data.amount.toString(),
         reason: data.reason || "",
-        budget_item: data.budget_item || 0,
+        budget_item: data.budget_item,
       };
 
       // Helper to resolve personnel ID to name
       const getPersonnelName = (personnelId: number): string => {
-        const person = personnel.find(p => p.id === personnelId);
+        const person = personnel.personnel.find(p => p.id === personnelId);
         if (person) {
           return `${person.first_name} ${person.last_name}`.trim();
         }
@@ -276,8 +284,9 @@ const PersonnelLayout = () => {
             },
           });
         }
-        setIsSubmitChangeRequestModalOpen(true);
+        // Close compensation modal and open change request modal
         setIsEditCompensationModalOpen(false);
+        setIsSubmitChangeRequestModalOpen(true);
       } else {
         // Admin can save directly
         if (editingCompensation) {
@@ -285,12 +294,17 @@ const PersonnelLayout = () => {
         } else {
           await addCompensation(payload);
         }
+        // Refresh compensation list to ensure UI is up to date
+        await fetchCompensation();
         setIsEditCompensationModalOpen(false);
         setEditingPersonnel(null);
         setEditingCompensation(null);
+        setDefaultCompensationType(null);
       }
     } catch (error) {
       console.error("Error saving compensation", error);
+      // Re-throw error so modal can handle it
+      throw error;
     }
   };
 
@@ -299,7 +313,7 @@ const PersonnelLayout = () => {
     
     // Helper to resolve personnel ID to name
     const getPersonnelName = (personnelId: number): string => {
-      const person = personnel.find(p => p.id === personnelId);
+      const person = personnel.personnel.find(p => p.id === personnelId);
       if (person) {
         return `${person.first_name} ${person.last_name}`.trim();
       }
@@ -336,6 +350,23 @@ const PersonnelLayout = () => {
   const handleAddHonoraria = (person: Personnel) => {
     setEditingPersonnel(person);
     setEditingCompensation(null);
+    setDefaultCompensationType("HONORARIA");
+    setIsEditCompensationModalOpen(true);
+  };
+
+  // Add salary
+  const handleAddSalary = (person: Personnel) => {
+    setEditingPersonnel(person);
+    setEditingCompensation(null);
+    setDefaultCompensationType("SALARY");
+    setIsEditCompensationModalOpen(true);
+  };
+
+  // Add compensation (generic, for empty state)
+  const handleAddCompensation = (person: Personnel) => {
+    setEditingPersonnel(person);
+    setEditingCompensation(null);
+    setDefaultCompensationType("SALARY");
     setIsEditCompensationModalOpen(true);
   };
 
@@ -349,6 +380,7 @@ const PersonnelLayout = () => {
 
     setEditingPersonnel(person);
     setEditingCompensation(compItem);
+    setDefaultCompensationType(null); // Clear default type when editing
     setIsEditCompensationModalOpen(true);
   };
 
@@ -481,9 +513,11 @@ const PersonnelLayout = () => {
                 onDeletePersonnel={handleOpenDeletePersonnelModal}
                 onEditSalary={handleEditSalary}
                 onDeleteSalary={handleDeleteSalary}
+                onAddSalary={handleAddSalary}
                 onAddHonoraria={handleAddHonoraria}
                 onEditHonoraria={handleEditHonoraria}
                 onDeleteHonoraria={handleDeleteHonoraria}
+                onAddCompensation={handleAddCompensation}
                 showActions={user?.role !== "Executive"}
               />
             );
@@ -552,12 +586,17 @@ const PersonnelLayout = () => {
           onClose={() => {
             setIsEditCompensationModalOpen(false);
             setEditingCompensation(null);
-            // Don't clear Personnel yet, triggers flicker or undefined error if modal is closing
+            setDefaultCompensationType(null);
+            // Only clear editingPersonnel if we're not opening change request modal
+            if (!isSubmitChangeRequestModalOpen) {
+              setEditingPersonnel(null);
+            }
           }}
           onSubmit={handleSaveCompensation}
           compensation={editingCompensation}
           personnel={editingPersonnel}
           defaultBudgetItemId={personnelServicesBudgetId}
+          defaultType={defaultCompensationType}
         />
       )}
 
@@ -589,11 +628,13 @@ const PersonnelLayout = () => {
           onSubmit={async (data) => {
             await changeRequestsApi.create(currentProject.id, data);
             setPendingChangeRequest(null);
+            // Clean up editing state
+            setEditingPersonnel(null);
+            setEditingCompensation(null);
+            setDefaultCompensationType(null);
             // Refresh personnel data
             await personnel.fetchPersonnel();
-            if (editingPersonnel) {
-              await fetchCompensation();
-            }
+            await fetchCompensation();
           }}
         />
       )}

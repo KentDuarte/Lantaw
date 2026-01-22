@@ -195,7 +195,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           {/* Conditional Title */}
           <DialogTitle>{modalTitle}</DialogTitle>
@@ -206,43 +206,48 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Project Leader */}
-          <div>
-            <Label htmlFor="create-project-leader" className="mb-2">
-              Project Leader
-            </Label>
-            <Input
-              id="create-project-leader"
-              value={formData.projectLeader}
-              onChange={handleChange("projectLeader")}
-              placeholder="Enter project leader name..."
-              className={`${inputBaseClass} ${
-                formErrors.projectLeader ? errorInputClass : normalInputClass
-              }`}
-            />
-            {formErrors.projectLeader ? (
-              <p className="mt-1 text-xs text-red-600">{formErrors.projectLeader}</p>
-            ) : null}
-          </div>
+        <div className="space-y-3 overflow-y-auto flex-1 min-h-0 pr-1">
+          {/* Project Leader and Project Name */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="create-project-leader" className="mb-2">
+                Project Leader
+              </Label>
+              <Input
+                id="create-project-leader"
+                value={formData.projectLeader}
+                onChange={handleChange("projectLeader")}
+                placeholder="Enter project leader name..."
+                className={`${inputBaseClass} ${
+                  formErrors.projectLeader ? errorInputClass : normalInputClass
+                }`}
+              />
+              <div className="mt-1 min-h-[20px]">
+                {formErrors.projectLeader ? (
+                  <p className="text-xs text-red-600">{formErrors.projectLeader}</p>
+                ) : null}
+              </div>
+            </div>
 
-          {/* Project Name */}
-          <div>
-            <Label htmlFor="create-project-name" className="mb-2">
-              Project Name
-            </Label>
-            <Input
-              id="create-project-name"
-              value={formData.name}
-              onChange={handleChange("name")}
-              placeholder="Enter project name..."
-              className={`${inputBaseClass} ${
-                formErrors.name ? errorInputClass : normalInputClass
-              }`}
-            />
-            {formErrors.name ? (
-              <p className="mt-1 text-xs text-red-600">{formErrors.name}</p>
-            ) : null}
+            <div>
+              <Label htmlFor="create-project-name" className="mb-2">
+                Project Name
+              </Label>
+              <Input
+                id="create-project-name"
+                value={formData.name}
+                onChange={handleChange("name")}
+                placeholder="Enter project name..."
+                className={`${inputBaseClass} ${
+                  formErrors.name ? errorInputClass : normalInputClass
+                }`}
+              />
+              <div className="mt-1 min-h-[20px]">
+                {formErrors.name ? (
+                  <p className="text-xs text-red-600">{formErrors.name}</p>
+                ) : null}
+              </div>
+            </div>
           </div>
 
           {/* Description */}
@@ -255,7 +260,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
               value={formData.description}
               onChange={handleChange("description")}
               placeholder="Enter project description..."
-              className="min-h-24"
+              className="min-h-16"
             />
           </div>
 
@@ -274,11 +279,13 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
                   formErrors.startDate ? errorInputClass : normalInputClass
                 }`}
               />
-              {formErrors.startDate ? (
-                <p className="mt-1 text-xs text-red-600">
-                  {formErrors.startDate}
-                </p>
-              ) : null}
+              <div className="mt-1 min-h-[20px]">
+                {formErrors.startDate ? (
+                  <p className="text-xs text-red-600">
+                    {formErrors.startDate}
+                  </p>
+                ) : null}
+              </div>
             </div>
             <div>
               <Label htmlFor="create-project-end-date" className="mb-2">
@@ -293,78 +300,86 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
                   formErrors.endDate ? errorInputClass : normalInputClass
                 }`}
               />
-              {formErrors.endDate ? (
-                <p className="mt-1 text-xs text-red-600">
-                  {formErrors.endDate}
-                </p>
-              ) : null}
+              <div className="mt-1 min-h-[20px]">
+                {formErrors.endDate ? (
+                  <p className="text-xs text-red-600">
+                    {formErrors.endDate}
+                  </p>
+                ) : null}
+              </div>
             </div>
           </div>
 
-          {/* Grant */}
-          <div>
-            <Label htmlFor="create-project-grant" className="mb-2">
-              Grant Amount (₱)
-            </Label>
-            <Input
-              id="create-project-grant"
-              type="text" // use text so we can validate ourselves
-              value={formData.totalGrant}
-              onChange={(e) => {
-                const value = e.target.value;
-
-                // Allow only digits
-                if (/^\d*$/.test(value)) {
-                  setFormData((prev) => ({ ...prev, totalGrant: value }));
-                  validateField("totalGrant", value); // validate as they type
-                } else {
-                  // Set error immediately if invalid character is typed
-                  setFormErrors((prev) => ({
-                    ...prev,
-                    totalGrant: "Grant must be a number.",
-                  }));
-                }
-              }}
-              placeholder="0"
-              className={`${inputBaseClass} ${
-                formErrors.totalGrant ? errorInputClass : normalInputClass
-              }`}
-            />
-            {formErrors.totalGrant && (
-              <p className="mt-1 text-xs text-red-600">
-                {formErrors.totalGrant}
-              </p>
-            )}
-          </div>
-
-          {/* Project Staff */}
-          {checkStaffExists && (
+          {/* Grant and Project Staff */}
+          <div className={checkStaffExists ? "grid grid-cols-2 gap-4" : ""}>
             <div>
-              <Label htmlFor="create-project-staff" className="mb-2">
-                Project Staff (Email)
+              <Label htmlFor="create-project-grant" className="mb-2">
+                Grant Amount (₱)
               </Label>
               <Input
-                id="create-project-staff"
-                type="email"
-                value={formData.projectStaff}
-                onChange={handleChange("projectStaff")}
-                onBlur={handleStaffBlur}
-                placeholder="staff@example.com"
+                id="create-project-grant"
+                type="text" // use text so we can validate ourselves
+                value={formData.totalGrant}
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  // Allow only digits
+                  if (/^\d*$/.test(value)) {
+                    setFormData((prev) => ({ ...prev, totalGrant: value }));
+                    validateField("totalGrant", value); // validate as they type
+                  } else {
+                    // Set error immediately if invalid character is typed
+                    setFormErrors((prev) => ({
+                      ...prev,
+                      totalGrant: "Grant must be a number.",
+                    }));
+                  }
+                }}
+                placeholder="0"
                 className={`${inputBaseClass} ${
-                  formErrors.projectStaff ? errorInputClass : normalInputClass
+                  formErrors.totalGrant ? errorInputClass : normalInputClass
                 }`}
               />
-              {checkingStaff ? (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Checking...
-                </p>
-              ) : formErrors.projectStaff ? (
-                <p className="mt-1 text-xs text-red-600">
-                  {formErrors.projectStaff}
-                </p>
-              ) : null}
+              <div className="mt-1 min-h-[20px]">
+                {formErrors.totalGrant && (
+                  <p className="text-xs text-red-600">
+                    {formErrors.totalGrant}
+                  </p>
+                )}
+              </div>
             </div>
-          )}
+
+            {/* Project Staff */}
+            {checkStaffExists && (
+              <div>
+                <Label htmlFor="create-project-staff" className="mb-2">
+                  Project Staff (Email)
+                </Label>
+                <Input
+                  id="create-project-staff"
+                  type="email"
+                  value={formData.projectStaff}
+                  onChange={handleChange("projectStaff")}
+                  onBlur={handleStaffBlur}
+                  placeholder="staff@example.com"
+                  className={`${inputBaseClass} ${
+                    formErrors.projectStaff ? errorInputClass : normalInputClass
+                  }`}
+                />
+                <div className="mt-1 min-h-[20px]">
+                  {checkingStaff ? (
+                    <p className="text-xs text-muted-foreground">
+                      Checking...
+                    </p>
+                  ) : formErrors.projectStaff ? (
+                    <p className="text-xs text-red-600">
+                      {formErrors.projectStaff}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer */}
