@@ -12,6 +12,7 @@ interface CompensationItemCardProps {
   onEdit: (item: Compensation) => void;
   onDelete: (item: Compensation) => void;
   showActions?: boolean;
+  hideFinancialValues?: boolean;
 }
 
 export const CompensationItemCard: React.FC<CompensationItemCardProps> = ({
@@ -19,6 +20,7 @@ export const CompensationItemCard: React.FC<CompensationItemCardProps> = ({
   onEdit,
   onDelete,
   showActions = true,
+  hideFinancialValues = false,
 }) => {
   const isHonoraria = item.type?.toLowerCase() === "honoraria";
 
@@ -29,7 +31,7 @@ export const CompensationItemCard: React.FC<CompensationItemCardProps> = ({
         <div className="flex-1">
           <p className="font-medium text-sm text-foreground">{item.reason}</p>
           <p className="text-sm font-bold text-foreground mt-1">
-            {formatCurrency(item.amount)}
+            {formatCurrency(item.amount, hideFinancialValues)}
           </p>
         </div>
 

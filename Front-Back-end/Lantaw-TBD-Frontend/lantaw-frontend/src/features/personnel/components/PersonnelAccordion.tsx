@@ -18,6 +18,7 @@ import {
   getStatusMarkerColor,
   getStatusBadgeColor,
 } from "../utils/statusHelpers";
+import { formatCurrency } from "../../../utils/formatHelpers";
 
 interface PersonnelAccordionProps {
   personnel: Personnel;
@@ -35,6 +36,7 @@ interface PersonnelAccordionProps {
   onDeleteHonoraria: (personnel: Personnel, compensationId: number) => void;
   onAddCompensation?: (personnel: Personnel) => void;
   showActions?: boolean;
+  hideFinancialValues?: boolean;
 }
 
 export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
@@ -53,6 +55,7 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
   onDeleteHonoraria,
   onAddCompensation,
   showActions = true,
+  hideFinancialValues = false,
 }) => {
   const salary = compensations.filter((c) => c.type === "SALARY");
   const honorariaItems = compensations.filter((c) => c.type === "HONORARIA");
@@ -185,7 +188,7 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
                     <h4 className="font-medium text-sm">Salary</h4>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
-                        Total: ₱{getTotal(salary).toLocaleString()}
+                        Total: {hideFinancialValues ? "---" : formatCurrency(getTotal(salary))}
                       </span>
                       {showActions && onAddSalary && (
                         <Button
@@ -217,6 +220,7 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
                             onDeleteSalary(personnel, comp.id)
                           }
                           showActions={showActions}
+                          hideFinancialValues={hideFinancialValues}
                         />
                       ))
                     ) : (
@@ -233,7 +237,7 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
                     <h4 className="font-medium text-sm">Honoraria</h4>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                        Total: ₱{getTotal(honorariaItems).toLocaleString()}
+                        Total: {hideFinancialValues ? "---" : formatCurrency(getTotal(honorariaItems))}
                       </span>
                       {showActions && (
                         <Button
@@ -265,6 +269,7 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
                             onDeleteHonoraria(personnel, comp.id)
                           }
                           showActions={showActions}
+                          hideFinancialValues={hideFinancialValues}
                         />
                       ))
                     ) : (

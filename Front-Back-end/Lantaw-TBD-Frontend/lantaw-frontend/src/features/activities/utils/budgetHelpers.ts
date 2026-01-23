@@ -6,9 +6,11 @@ export interface BudgetStatus {
 }
 
 // Calculate budget variance and return status
+// If hideForExecutive is true, hides peso amounts in status text.
 export const getBudgetStatus = (
   projected: number,
-  actual: number
+  actual: number,
+  hideForExecutive: boolean = false
 ): BudgetStatus => {
   const variance = actual - projected;
   
@@ -16,12 +18,12 @@ export const getBudgetStatus = (
     return { text: "", color: "text-gray-600" };
   } else if (variance > 0) {
     return {
-      text: `- ₱${variance.toLocaleString()}`,
+      text: hideForExecutive ? "- ---" : `- ₱${variance.toLocaleString()}`,
       color: "text-red-600",
     };
   } else {
     return {
-      text: `+ ₱${Math.abs(variance).toLocaleString()}`,
+      text: hideForExecutive ? "+ ---" : `+ ₱${Math.abs(variance).toLocaleString()}`,
       color: "text-green-600",
     };
   }
@@ -41,7 +43,14 @@ export const isOverBudget = (projected: number, actual: number): boolean => {
 };
 
 // Format currency amount
-export const formatCurrency = (amount: number | string | null): string => {
+// If hideForExecutive is true, returns "---" instead of the formatted amount.
+export const formatCurrency = (
+  amount: number | string | null,
+  hideForExecutive: boolean = false
+): string => {
+  if (hideForExecutive) {
+    return "---";
+  }
   const numAmount = typeof amount === "string" ? parseFloat(amount) : amount || 0;
   return `₱${numAmount.toLocaleString()}`;
 };

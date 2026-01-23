@@ -6,11 +6,13 @@ import { OVERVIEW_COLORS } from "../utils/pieChartHelper";
 interface BudgetOverviewChartProps {
   data: BudgetItem[];
   onSliceClick: (view: "PS" | "MOOE" | "CO") => void;
+  hideFinancialValues?: boolean;
 }
 
 export const BudgetOverviewChart: React.FC<BudgetOverviewChartProps> = ({
   data,
   onSliceClick,
+  hideFinancialValues = false,
 }) => {
   return (
     <ResponsiveContainer width="100%" height={400}>
@@ -45,7 +47,7 @@ export const BudgetOverviewChart: React.FC<BudgetOverviewChartProps> = ({
         </Pie>
         <Tooltip
           formatter={(value: number, name: string, props: any) => [
-            `₱${value.toLocaleString()}`,
+            hideFinancialValues ? "---" : `₱${value.toLocaleString()}`,
             `${name} (${props.payload.percentage}%)`,
           ]}
         />

@@ -30,6 +30,7 @@ interface ProjectModalProps {
   setFormData: React.Dispatch<React.SetStateAction<ProjectFormData>>;
   onSubmit: () => void;
   checkStaffExists?: (email: string) => Promise<boolean>;
+  userRole?: string;
 }
 
 type FormErrors = Partial<Record<keyof ProjectFormData, string>>;
@@ -44,7 +45,9 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
   setFormData,
   onSubmit,
   checkStaffExists,
+  userRole,
 }) => {
+  const hideFinancialValues = userRole === "Executive";
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [checkingStaff, setCheckingStaff] = useState(false);
 
@@ -312,42 +315,44 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
 
           {/* Grant and Project Staff */}
           <div className={checkStaffExists ? "grid grid-cols-2 gap-4" : ""}>
-            <div>
-              <Label htmlFor="create-project-grant" className="mb-2">
-                Grant Amount (₱)
-              </Label>
-              <Input
-                id="create-project-grant"
-                type="text" // use text so we can validate ourselves
-                value={formData.totalGrant}
-                onChange={(e) => {
-                  const value = e.target.value;
+            {!hideFinancialValues && (
+              <div>
+                <Label htmlFor="create-project-grant" className="mb-2">
+                  Grant Amount (₱)
+                </Label>
+                <Input
+                  id="create-project-grant"
+                  type="text" // use text so we can validate ourselves
+                  value={formData.totalGrant}
+                  onChange={(e) => {
+                    const value = e.target.value;
 
-                  // Allow only digits
-                  if (/^\d*$/.test(value)) {
-                    setFormData((prev) => ({ ...prev, totalGrant: value }));
-                    validateField("totalGrant", value); // validate as they type
-                  } else {
-                    // Set error immediately if invalid character is typed
-                    setFormErrors((prev) => ({
-                      ...prev,
-                      totalGrant: "Grant must be a number.",
-                    }));
-                  }
-                }}
-                placeholder="0"
-                className={`${inputBaseClass} ${
-                  formErrors.totalGrant ? errorInputClass : normalInputClass
-                }`}
-              />
-              <div className="mt-1 min-h-[20px]">
-                {formErrors.totalGrant && (
-                  <p className="text-xs text-red-600">
-                    {formErrors.totalGrant}
-                  </p>
-                )}
+                    // Allow only digits
+                    if (/^\d*$/.test(value)) {
+                      setFormData((prev) => ({ ...prev, totalGrant: value }));
+                      validateField("totalGrant", value); // validate as they type
+                    } else {
+                      // Set error immediately if invalid character is typed
+                      setFormErrors((prev) => ({
+                        ...prev,
+                        totalGrant: "Grant must be a number.",
+                      }));
+                    }
+                  }}
+                  placeholder="0"
+                  className={`${inputBaseClass} ${
+                    formErrors.totalGrant ? errorInputClass : normalInputClass
+                  }`}
+                />
+                <div className="mt-1 min-h-[20px]">
+                  {formErrors.totalGrant && (
+                    <p className="text-xs text-red-600">
+                      {formErrors.totalGrant}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Project Staff */}
             {checkStaffExists && (

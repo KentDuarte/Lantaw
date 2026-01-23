@@ -38,6 +38,9 @@ const ActivitiesLayout = () => {
   const { user } = useAuth();
   const activities = useActivities(currentProject?.id || null);
   const filters = useActivityFilters();
+  
+  // Helper to check if financial values should be hidden
+  const hideFinancialValues = user?.role === "Executive";
 
   // Project status state
   const [projectStatus, setProjectStatus] = useState<
@@ -420,6 +423,7 @@ const ActivitiesLayout = () => {
                 onDeleteActivity={handleOpenDeleteActivityModal}
                 onAddExpense={handleOpenAddExpenseModal}
                 showActions={user?.role !== "Executive"}
+                hideFinancialValues={hideFinancialValues}
               />
             );
           })}

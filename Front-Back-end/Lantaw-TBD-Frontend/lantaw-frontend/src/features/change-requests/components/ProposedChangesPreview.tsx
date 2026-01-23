@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Label } from "../../../components/common/label";
 import { Badge } from "../../../components/common/badge";
-import { formatCurrency } from "../../../utils/formatHelpers";
+import { formatCurrency, shouldHideFinancialValues } from "../../../utils/formatHelpers";
 import type { Personnel } from "../../../types/personnel";
 import api from "../../../api/client";
+import { useAuth } from "../../../context/AuthContext";
 
 interface ProposedChangesPreviewProps {
   proposedChanges: Record<string, any>;
@@ -20,6 +21,8 @@ export const ProposedChangesPreview: React.FC<ProposedChangesPreviewProps> = ({
   currentState = null,
   projectId,
 }) => {
+  const { user } = useAuth();
+  const hideFinancialValues = shouldHideFinancialValues(user?.role);
   const [personnelList, setPersonnelList] = useState<Personnel[]>([]);
 
   // Fetch personnel list for resolving IDs to names
@@ -70,7 +73,7 @@ export const ProposedChangesPreview: React.FC<ProposedChangesPreviewProps> = ({
     if (key.includes("expense") || key.includes("amount") || key.includes("grant")) {
       const numValue = typeof value === "string" ? parseFloat(value) : value;
       if (!isNaN(numValue)) {
-        return formatCurrency(numValue);
+        return formatCurrency(numValue, hideFinancialValues);
       }
       return String(value);
     }

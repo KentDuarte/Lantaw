@@ -31,11 +31,13 @@ import { getBudgetStatus } from "../utils/barChartHelper";
 interface ExpenseComparisonChartProps {
   data: ExpenseComparisonItem[];
   projectSummary: ProjectSummary;
+  hideFinancialValues?: boolean;
 }
 
 export const ExpenseComparisonChart: React.FC<ExpenseComparisonChartProps> = ({
   data,
   projectSummary,
+  hideFinancialValues = false,
 }) => {
   const { totalGrant, projectedExpenses, totalSpent } = projectSummary;
   return (
@@ -52,11 +54,15 @@ export const ExpenseComparisonChart: React.FC<ExpenseComparisonChartProps> = ({
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="category" fontSize={12} />
             <YAxis
-              tickFormatter={(value) => `₱${(value / 1000).toFixed(0)}k`}
+              tickFormatter={(value) => 
+                hideFinancialValues ? "---" : `₱${(value / 1000).toFixed(0)}k`
+              }
               fontSize={12}
             />
             <Tooltip
-              formatter={(value: number) => `₱${value.toLocaleString()}`}
+              formatter={(value: number) => 
+                hideFinancialValues ? "---" : `₱${value.toLocaleString()}`
+              }
               labelStyle={{ color: "#000" }}
             />
             <Bar
@@ -71,26 +77,32 @@ export const ExpenseComparisonChart: React.FC<ExpenseComparisonChartProps> = ({
         <div className="mt-4 space-y-2">
           <div className="flex justify-between text-sm">
             <span>Total Grant:</span>
-            <span className="font-medium">₱{totalGrant.toLocaleString()}</span>
+            <span className="font-medium">
+              {hideFinancialValues ? "---" : `₱${totalGrant.toLocaleString()}`}
+            </span>
           </div>
           <div className="flex justify-between text-sm">
             <span>Total Projected:</span>
             <span className="font-medium">
-              ₱{projectedExpenses.toLocaleString()}
+              {hideFinancialValues 
+                ? "---" 
+                : `₱${projectedExpenses.toLocaleString()}`}
             </span>
           </div>
           <div className="flex justify-between text-sm">
             <span>Total Spent:</span>
-            <span className="font-medium">₱{totalSpent.toLocaleString()}</span>
+            <span className="font-medium">
+              {hideFinancialValues ? "---" : `₱${totalSpent.toLocaleString()}`}
+            </span>
           </div>
           <div className="flex justify-between text-sm">
             <span>Overall Status:</span>
             <span
               className={`font-medium ${
-                getBudgetStatus(projectedExpenses, totalSpent).color
+                getBudgetStatus(projectedExpenses, totalSpent, hideFinancialValues).color
               }`}
             >
-              {getBudgetStatus(projectedExpenses, totalSpent).text}
+              {getBudgetStatus(projectedExpenses, totalSpent, hideFinancialValues).text}
             </span>
           </div>
         </div>
@@ -108,7 +120,7 @@ export const ExpenseComparisonChart: React.FC<ExpenseComparisonChartProps> = ({
             <CollapsibleContent className="mt-2">
               <div className="space-y-1">
                 {data.map((item) => {
-                  const status = getBudgetStatus(item.projected, item.actual);
+                  const status = getBudgetStatus(item.projected, item.actual, hideFinancialValues);
                   return (
                     <div
                       key={item.category}

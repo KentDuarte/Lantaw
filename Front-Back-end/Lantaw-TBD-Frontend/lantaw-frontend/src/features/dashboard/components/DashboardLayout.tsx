@@ -154,6 +154,9 @@ const DashboardLayout = () => {
     return generateColorVariations(baseColor, categoryData.length);
   }, [budgetView, categoryData]);
 
+  // Helper function to check if financial values should be hidden
+  const hideFinancialValues = user?.role === "Executive";
+
   // Helper function to change views of budget pie chart based on click
   const renderBudgetBreakdown = () => {
     if (budgetView === "OVERVIEW") {
@@ -161,6 +164,7 @@ const DashboardLayout = () => {
         <BudgetOverviewChart
           data={actualBudgetItemTotal}
           onSliceClick={setBudgetView}
+          hideFinancialValues={hideFinancialValues}
         />
       );
     } else {
@@ -170,6 +174,7 @@ const DashboardLayout = () => {
           categoryName={categoryName}
           detailColors={detailColors}
           onBack={() => setBudgetView("OVERVIEW")}
+          hideFinancialValues={hideFinancialValues}
         />
       );
     }
@@ -306,6 +311,7 @@ const DashboardLayout = () => {
         <ExpenseComparisonChart
           data={expenseComparisonPerBudgetItem}
           projectSummary={expenseSummary}
+          hideFinancialValues={hideFinancialValues}
         />
       </div>
 
@@ -331,6 +337,7 @@ const DashboardLayout = () => {
                       onExpand={activities.fetchActivities}
                       budgetLineItems={[]}
                       showActions={false}
+                      hideFinancialValues={hideFinancialValues}
                     />
                   );
                 })}
@@ -348,6 +355,7 @@ const DashboardLayout = () => {
         formData={editFormData}
         setFormData={setEditFormData}
         onSubmit={handleEditProject}
+        userRole={user?.role}
       />
     </div>
   );

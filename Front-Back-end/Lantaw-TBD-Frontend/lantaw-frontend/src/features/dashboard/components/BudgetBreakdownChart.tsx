@@ -9,6 +9,7 @@ interface BudgetBreakdownChartProps {
   categoryName: string;
   detailColors: string[];
   onBack: () => void;
+  hideFinancialValues?: boolean;
 }
 
 export const BudgetBreakdownChart: React.FC<BudgetBreakdownChartProps> = ({
@@ -16,6 +17,7 @@ export const BudgetBreakdownChart: React.FC<BudgetBreakdownChartProps> = ({
   categoryName,
   detailColors,
   onBack,
+  hideFinancialValues = false,
 }) => {
   const totalAmount = categoryData.reduce((sum, item) => sum + item.amount, 0);
 
@@ -37,7 +39,7 @@ export const BudgetBreakdownChart: React.FC<BudgetBreakdownChartProps> = ({
       <div className="text-center mb-4">
         <h4 className="font-medium mb-2">{categoryName} Breakdown</h4>
         <p className="text-sm text-muted-foreground">
-          Total: ₱{totalAmount.toLocaleString()}
+          Total: {hideFinancialValues ? "---" : `₱${totalAmount.toLocaleString()}`}
         </p>
       </div>
       <ResponsiveContainer width="100%" height={350}>
@@ -62,7 +64,7 @@ export const BudgetBreakdownChart: React.FC<BudgetBreakdownChartProps> = ({
           </Pie>
           <Tooltip
             formatter={(value: number, name: string, props: any) => [
-              `₱${value.toLocaleString()}`,
+              hideFinancialValues ? "---" : `₱${value.toLocaleString()}`,
               `${name} (${props.payload.percentage}%)`,
             ]}
           />

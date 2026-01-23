@@ -27,6 +27,7 @@ interface ActivityCardProps {
   onDelete?: (activity: Activity, objective: Objective) => void;
   onAddExpense?: (activity: Activity, objective: Objective) => void;
   showActions?: boolean;
+  hideFinancialValues?: boolean;
 }
 
 export const ActivityCard: React.FC<ActivityCardProps> = ({
@@ -37,12 +38,13 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
   onDelete,
   onAddExpense,
   showActions,
+  hideFinancialValues = false,
 }) => {
   const activityStyles = getActivityStatusColor(activity.activity_status);
   const projected = Number(activity.projected_expense || 0);
   const actual = Number(activity.actual_expense || 0);
   const balance = calculateBalance(projected, actual);
-  const budgetStatus = getBudgetStatus(projected, actual);
+  const budgetStatus = getBudgetStatus(projected, actual, hideFinancialValues);
 
   return (
     <div className="border rounded-lg bg-background overflow-hidden shadow-sm">
@@ -124,12 +126,14 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
                   Projected
                 </Label>
                 <p className="text-sm font-medium">
-                  {formatCurrency(projected)}
+                  {formatCurrency(projected, hideFinancialValues)}
                 </p>
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Actual</Label>
-                <p className="text-sm font-medium">{formatCurrency(actual)}</p>
+                <p className="text-sm font-medium">
+                  {formatCurrency(actual, hideFinancialValues)}
+                </p>
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Balance</Label>
@@ -138,7 +142,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
                     balance < 0 ? "text-red-600" : "text-gray-600"
                   }`}
                 >
-                  {formatCurrency(balance)}
+                  {formatCurrency(balance, hideFinancialValues)}
                 </p>
               </div>
               {/* Budget Status Bar */}

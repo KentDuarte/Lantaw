@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Label } from "../../../components/common/label";
 import { Badge } from "../../../components/common/badge";
 import type { ChangeRequest } from "../../../types/changeRequest";
-import { formatCurrency } from "../../../utils/formatHelpers";
+import { formatCurrency, shouldHideFinancialValues } from "../../../utils/formatHelpers";
 import type { Personnel } from "../../../types/personnel";
 import api from "../../../api/client";
+import { useAuth } from "../../../context/AuthContext";
 
 interface ChangeRequestFieldsDisplayProps {
   changeRequest: ChangeRequest;
@@ -13,6 +14,8 @@ interface ChangeRequestFieldsDisplayProps {
 export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProps> = ({
   changeRequest,
 }) => {
+  const { user } = useAuth();
+  const hideFinancialValues = shouldHideFinancialValues(user?.role);
   const { change_type, operation, current_state, proposed_changes, project } = changeRequest;
   const [personnelList, setPersonnelList] = useState<Personnel[]>([]);
 
@@ -59,7 +62,7 @@ export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProp
 
     // Handle amounts/expenses
     if (key.includes("expense") || key.includes("amount") || key.includes("grant")) {
-      return formatCurrency(value);
+      return formatCurrency(value, hideFinancialValues);
     }
 
     // Handle status fields

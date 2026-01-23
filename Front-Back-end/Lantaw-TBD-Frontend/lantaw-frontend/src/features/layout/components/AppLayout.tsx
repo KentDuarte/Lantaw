@@ -351,6 +351,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                           setFormData={setCreateProjectForm}
                           onSubmit={handleCreateProject}
                           checkStaffExists={checkStaffExists}
+                          userRole={user?.role}
                         />
                       </>
                     )}

@@ -28,6 +28,7 @@ interface ObjectiveAccordionProps {
   onDeleteActivity?: (activity: Activity, objective: Objective) => void;
   onAddExpense?: (activity: Activity, objective: Objective) => void;
   showActions?: boolean;
+  hideFinancialValues?: boolean;
 }
 
 export const ObjectiveAccordion: React.FC<ObjectiveAccordionProps> = ({
@@ -43,6 +44,7 @@ export const ObjectiveAccordion: React.FC<ObjectiveAccordionProps> = ({
   onDeleteActivity,
   onAddExpense,
   showActions,
+  hideFinancialValues = false,
 }) => {
   const rawActivities = activities;
   const hasData = (rawActivities?.length ?? 0) > 0;
@@ -159,6 +161,7 @@ export const ObjectiveAccordion: React.FC<ObjectiveAccordionProps> = ({
                       onDelete={onDeleteActivity}
                       onAddExpense={onAddExpense}
                       showActions={showActions}
+                      hideFinancialValues={hideFinancialValues}
                     />
                   );
                 })}
