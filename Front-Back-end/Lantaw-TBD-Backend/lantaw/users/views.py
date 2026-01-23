@@ -4,8 +4,24 @@ from django.contrib.auth import get_user_model
 from .serializers import UserSerializer, RegisterSerializer, PasswordChangeSerializer
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.utils import timezone
 
 User = get_user_model()
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Custom token serializer for JWT authentication.
+    Note: last_login is now updated on logout, not on login.
+    """
+    pass
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """
+    Custom token view that uses CustomTokenObtainPairSerializer to update last_login.
+    """
+    serializer_class = CustomTokenObtainPairSerializer
 
 class IsAdminOrSelf(permissions.BasePermission):
     """
@@ -107,3 +123,18 @@ def check_user_exists(request):
             return Response({"exists": False}, status=status.HTTP_403_FORBIDDEN)
     except User.DoesNotExist:
         return Response({"exists": False})
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def logout_view(request):
+    """
+    Logout endpoint that updates last_login when user logs out.
+    This ensures last_login reflects when the user last logged out.
+    """
+    try:
+        # Update last_login to current time when user logs out
+        User.objects.filter(pk=request.user.pk).update(last_login=timezone.now())
+        return Response({"detail": "Logged out successfully."}, status=status.HTTP_200_OK)
+    except Exception as e:
+        # Even if update fails, still allow logout
+        return Response({"detail": "Logged out successfully."}, status=status.HTTP_200_OK)

@@ -57,7 +57,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   // Logout
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Call logout API to update last_login before clearing tokens
+    if (accessToken) {
+      try {
+        await api.post("/api/logout/", {}, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+      } catch (err) {
+        // Continue with logout even if API call fails
+        console.error("Logout API call failed:", err);
+      }
+    }
+    
     setAccessToken(null);
     setRefreshToken(null);
     setUser(null);
@@ -65,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.removeItem("refresh");
     localStorage.removeItem("user");
     setLoading(false);
-  }, []);
+  }, [accessToken]);
 
   // Fetch user profile
   const fetchUserProfile = useCallback(async (token: string) => {

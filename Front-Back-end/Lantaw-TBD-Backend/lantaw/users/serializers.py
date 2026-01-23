@@ -3,6 +3,7 @@ from typing import Any
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, password_validation
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -11,6 +12,8 @@ class UserSerializer(serializers.ModelSerializer):
     # Show role as string (e.g., "Admin") instead of raw DB value
     role = serializers.CharField(source="get_role_display", read_only=True)
     projects = serializers.SerializerMethodField()
+    # Ensure last_login is properly formatted with timezone info
+    last_login = serializers.DateTimeField(read_only=True, format=None)
     class Meta:
         model = User
         fields = [

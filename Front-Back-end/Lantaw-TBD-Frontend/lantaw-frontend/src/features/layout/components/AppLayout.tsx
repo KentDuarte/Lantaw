@@ -31,7 +31,6 @@ import {
   ChevronDown,
   Eye,
   Plus,
-  LogOut,
   FileText,
 } from "lucide-react";
 import api from "../../../api/client";
@@ -290,24 +289,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </SidebarGroup>
         </SidebarContent>
 
-        {/* Sidebar Footer (Logout and Projects) */}
+        {/* Sidebar Footer (Projects) */}
         <SidebarFooter className="border-t">
-          {/* Logout Button */}
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Logout">
-                    <NavLink to="/logout">
-                      <LogOut />
-                      <span>Logout</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
           {/* Projects Section */}
           <Collapsible>
             <SidebarGroup>
