@@ -1,6 +1,6 @@
 // Main orchestrator component for activities management.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Accordion } from "../../../components/common/accordion";
 
 // Context
@@ -73,6 +73,12 @@ const ActivitiesLayout = () => {
     null
   );
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+
+  // Expanded objectives state (controlled accordion)
+  const [expandedObjectives, setExpandedObjectives] = useState<string[]>([]);
+  
+  // Track the last search query to avoid refetching unnecessarily
+  const lastSearchQueryRef = useRef<string>("");
 
   // Update project status when currentProject changes
   useEffect(() => {
@@ -377,6 +383,94 @@ const ActivitiesLayout = () => {
     return filters.filterActivities(rawActivities);
   };
 
+  // Compute which objectives should be auto-expanded based on search query
+  const objectivesToAutoExpand = useMemo(() => {
+    const searchQuery = filters.filters.searchQuery.trim();
+    
+    // If search query is empty, don't auto-expand (let user control manually)
+    if (!searchQuery) {
+      return [];
+    }
+
+    const searchLower = searchQuery.toLowerCase();
+    
+    // Find objectives that should be auto-expanded
+    const toExpand: string[] = [];
+    
+    activities.objectives.forEach((objective) => {
+      // Check if objective title or description matches
+      const objectiveMatches = 
+        objective.title.toLowerCase().includes(searchLower) ||
+        objective.description.toLowerCase().includes(searchLower);
+      
+      // Check if objective has matching activities (if activities are loaded)
+      const objectiveActivities = activities.activitiesMap[objective.id];
+      const hasActivitiesLoaded = objectiveActivities !== undefined;
+      const filteredActivities = hasActivitiesLoaded 
+        ? filters.filterActivities(objectiveActivities)
+        : [];
+      const hasMatchingActivities = filteredActivities.length > 0;
+      
+      // Auto-expand if:
+      // 1. Objective matches by title/description (expand immediately, even if activities not loaded), OR
+      // 2. Objective has matching activities (after activities are loaded)
+      if (objectiveMatches || hasMatchingActivities) {
+        toExpand.push(`objective-${objective.id}`);
+      }
+    });
+
+    return toExpand;
+  }, [filters.filters.searchQuery, activities.objectives, activities.activitiesMap, filters.filterActivities]);
+
+  // Fetch activities for all objectives when search query is set (only once per search query)
+  useEffect(() => {
+    const searchQuery = filters.filters.searchQuery.trim();
+    
+    // Only fetch if search query changed and is not empty
+    if (searchQuery && searchQuery !== lastSearchQueryRef.current) {
+      lastSearchQueryRef.current = searchQuery;
+      
+      // Proactively fetch activities for all objectives when searching
+      // This ensures we can check for matching activities even if they weren't loaded yet
+      activities.objectives.forEach((objective) => {
+        // Fetch activities if they haven't been loaded yet
+        if (!activities.activitiesMap[objective.id]) {
+          activities.fetchActivities(objective.id);
+        }
+      });
+    } else if (!searchQuery) {
+      // Reset ref when search is cleared
+      lastSearchQueryRef.current = "";
+    }
+  }, [filters.filters.searchQuery]);
+
+  // Update expanded objectives when search query or activities change
+  useEffect(() => {
+    const searchQuery = filters.filters.searchQuery.trim();
+    
+    if (searchQuery) {
+      // When searching, auto-expand objectives with matching activities
+      // Only update if the expansion list actually changed to avoid infinite loops
+      setExpandedObjectives((prev) => {
+        const prevSet = new Set(prev);
+        const newSet = new Set(objectivesToAutoExpand);
+        
+        // Check if arrays are different
+        if (prev.length !== objectivesToAutoExpand.length) {
+          return objectivesToAutoExpand;
+        }
+        
+        const hasChanges = objectivesToAutoExpand.some(
+          (id) => !prevSet.has(id)
+        ) || prev.some((id) => !newSet.has(id));
+        
+        return hasChanges ? objectivesToAutoExpand : prev;
+      });
+    }
+    // When search is cleared, keep current expansion state (user's manual choices)
+    // This allows users to maintain their manual expansion preferences
+  }, [objectivesToAutoExpand, filters.filters.searchQuery]);
+
   if (!currentProject) {
     return (
       <div className="p-6">
@@ -401,32 +495,42 @@ const ActivitiesLayout = () => {
 
       {/* Objectives Accordion */}
       <div className="space-y-4">
-        <Accordion type="multiple" className="w-full space-y-4">
-          {activities.objectives.map((objective) => {
-            const filteredActivities = getFilteredActivitiesForObjective(
-              objective.id
-            );
-            const isLoading = activities.loadingActivities[objective.id];
+        <Accordion 
+          type="multiple" 
+          className="w-full space-y-4"
+          value={expandedObjectives}
+          onValueChange={setExpandedObjectives}
+        >
+          {activities.objectives
+            .filter((objective) => {
+              const objectiveActivities = activities.activitiesMap[objective.id];
+              return filters.filterObjectives(objective, objectiveActivities);
+            })
+            .map((objective) => {
+              const filteredActivities = getFilteredActivitiesForObjective(
+                objective.id
+              );
+              const isLoading = activities.loadingActivities[objective.id];
 
-            return (
-              <ObjectiveAccordion
-                key={objective.id}
-                objective={objective}
-                activities={filteredActivities}
-                isLoading={isLoading}
-                onExpand={activities.fetchActivities}
-                budgetLineItems={activities.budgetLineItems}
-                onEditObjective={handleOpenEditObjectiveModal}
-                onDeleteObjective={handleOpenDeleteObjectiveModal}
-                onAddActivity={handleOpenAddActivityModal}
-                onEditActivity={handleOpenEditActivityModal}
-                onDeleteActivity={handleOpenDeleteActivityModal}
-                onAddExpense={handleOpenAddExpenseModal}
-                showActions={user?.role !== "Executive"}
-                hideFinancialValues={hideFinancialValues}
-              />
-            );
-          })}
+              return (
+                <ObjectiveAccordion
+                  key={objective.id}
+                  objective={objective}
+                  activities={filteredActivities}
+                  isLoading={isLoading}
+                  onExpand={activities.fetchActivities}
+                  budgetLineItems={activities.budgetLineItems}
+                  onEditObjective={handleOpenEditObjectiveModal}
+                  onDeleteObjective={handleOpenDeleteObjectiveModal}
+                  onAddActivity={handleOpenAddActivityModal}
+                  onEditActivity={handleOpenEditActivityModal}
+                  onDeleteActivity={handleOpenDeleteActivityModal}
+                  onAddExpense={handleOpenAddExpenseModal}
+                  showActions={user?.role !== "Executive"}
+                  hideFinancialValues={hideFinancialValues}
+                />
+              );
+            })}
         </Accordion>
       </div>
 

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { Activity } from "../../../types/activity";
+import type { Objective } from "../../../types/objective";
 
 export interface ActivityFilters {
   searchQuery: string;
@@ -20,6 +21,7 @@ export interface UseActivityFiltersReturn {
   setExpenseFilter: (filter: string) => void;
   clearFilters: () => void;
   filterActivities: (activities: Activity[] | undefined) => Activity[];
+  filterObjectives: (objective: Objective, activities: Activity[] | undefined) => boolean;
 }
 
 // Filter activities based on current filter state
@@ -84,6 +86,27 @@ export const useActivityFilters = (): UseActivityFiltersReturn => {
     return applyFilters(activities, filters);
   };
 
+  const filterObjectives = (objective: Objective, activities: Activity[] | undefined): boolean => {
+    // If search query is empty, show all objectives
+    if (!filters.searchQuery.trim()) {
+      return true;
+    }
+
+    const searchLower = filters.searchQuery.toLowerCase();
+
+    // Check if objective title or description matches the search query
+    const objectiveMatches =
+      objective.title.toLowerCase().includes(searchLower) ||
+      objective.description.toLowerCase().includes(searchLower);
+
+    // Check if any activities match the search query (after applying all filters)
+    const filteredActivities = filterActivities(activities);
+    const hasMatchingActivities = filteredActivities.length > 0;
+
+    // Show objective if it matches OR if it has matching activities
+    return objectiveMatches || hasMatchingActivities;
+  };
+
   return {
     filters,
     setSearchQuery,
@@ -93,6 +116,7 @@ export const useActivityFilters = (): UseActivityFiltersReturn => {
     setExpenseFilter,
     clearFilters,
     filterActivities,
+    filterObjectives,
   };
 };
 
