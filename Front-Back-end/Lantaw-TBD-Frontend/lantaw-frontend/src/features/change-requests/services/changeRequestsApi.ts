@@ -11,6 +11,44 @@ interface ApiResponse<T> {
   previous?: string | null;
 }
 
+// Helper function to fetch all pages from a paginated API
+const fetchAllPages = async <T>(initialUrl: string): Promise<T[]> => {
+  const allResults: T[] = [];
+  let url: string | null = initialUrl;
+
+  while (url) {
+    const res = await api.get<ApiResponse<T>>(url);
+    const data = res.data;
+    
+    if (data?.results) {
+      allResults.push(...data.results);
+    }
+    
+    // Check if there's a next page
+    if (data?.next) {
+      // Handle both absolute URLs and relative URLs
+      if (data.next.startsWith('http://') || data.next.startsWith('https://')) {
+        // Extract the path from the full URL
+        try {
+          const nextUrl = new URL(data.next);
+          url = nextUrl.pathname + nextUrl.search;
+        } catch {
+          // If URL parsing fails, try to extract path manually
+          const match = data.next.match(/\/api\/.*/);
+          url = match ? match[0] : null;
+        }
+      } else {
+        // Already a relative URL
+        url = data.next;
+      }
+    } else {
+      url = null;
+    }
+  }
+
+  return allResults;
+};
+
 export const changeRequestsApi = {
   // Fetch all change requests for a project (with optional filters)
   getAll: async (projectId: number, filters?: ChangeRequestFilters): Promise<ChangeRequest[]> => {
@@ -22,8 +60,7 @@ export const changeRequestsApi = {
     const queryString = params.toString();
     const url = `/api/projects/${projectId}/change-requests/${queryString ? `?${queryString}` : ''}`;
     
-    const res = await api.get<ApiResponse<ChangeRequest>>(url);
-    return res.data?.results || [];
+    return fetchAllPages<ChangeRequest>(url);
   },
 
   // Fetch all change requests across all projects (Admin only)
@@ -37,8 +74,7 @@ export const changeRequestsApi = {
     const queryString = params.toString();
     const url = `/api/change-requests/${queryString ? `?${queryString}` : ''}`;
     
-    const res = await api.get<ApiResponse<ChangeRequest>>(url);
-    return res.data?.results || [];
+    return fetchAllPages<ChangeRequest>(url);
   },
 
   // Fetch single change request

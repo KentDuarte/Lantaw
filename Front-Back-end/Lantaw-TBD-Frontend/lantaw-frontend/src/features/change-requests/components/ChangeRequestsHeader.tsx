@@ -18,12 +18,16 @@ interface ChangeRequestsHeaderProps {
   filters: UseChangeRequestFiltersReturn;
   isAdmin?: boolean;
   projects?: Array<{ id: number; name: string }>;
+  pageSize?: number;
+  onPageSizeChange?: (size: number) => void;
 }
 
 export const ChangeRequestsHeader: React.FC<ChangeRequestsHeaderProps> = ({
   filters,
   isAdmin = false,
   projects = [],
+  pageSize = 20,
+  onPageSizeChange,
 }) => {
   return (
     <div className="space-y-4">
@@ -40,7 +44,7 @@ export const ChangeRequestsHeader: React.FC<ChangeRequestsHeaderProps> = ({
 
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex flex-col lg:flex-row gap-4 justify-between">
             {/* Filters */}
             <div className="flex gap-2 items-center flex-wrap">
               <Filter className="h-4 w-4 text-muted-foreground" />
@@ -128,6 +132,28 @@ export const ChangeRequestsHeader: React.FC<ChangeRequestsHeaderProps> = ({
                 Clear
               </Button>
             </div>
+
+            {/* Page Size Selector */}
+            {onPageSizeChange && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                  Items per page:
+                </span>
+                <Select
+                  value={pageSize.toString()}
+                  onValueChange={(value) => onPageSizeChange(parseInt(value))}
+                >
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

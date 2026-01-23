@@ -10,6 +10,7 @@ import { ChangeRequestDetail } from "./ChangeRequestDetail";
 import { ApproveChangeRequestModal } from "./modals/ApproveChangeRequestModal";
 import { RejectChangeRequestModal } from "./modals/RejectChangeRequestModal";
 import { Card, CardContent } from "../../../components/common/card";
+import { Pagination } from "../../../components/common/pagination";
 import type { ChangeRequest } from "../../../types/changeRequest";
 import type { Project } from "../../../types/project";
 import api from "../../../api/client";
@@ -32,6 +33,10 @@ export const ChangeRequestsLayout: React.FC<ChangeRequestsLayoutProps> = ({
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   // Fetch projects for Admin and Project Staff filters
   useEffect(() => {
@@ -69,8 +74,30 @@ export const ChangeRequestsLayout: React.FC<ChangeRequestsLayoutProps> = ({
   // Refetch when filters change
   useEffect(() => {
     changeRequests.fetchChangeRequests(projectId || undefined, filters.filters);
+    // Reset to page 1 when filters change
+    setCurrentPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(filters.filters), projectId]);
+
+  // Filtered change requests
+  const filteredRequests = changeRequests.changeRequests.filter((req) => {
+    if (filters.filters.status && req.status !== filters.filters.status) return false;
+    if (filters.filters.change_type && req.change_type !== filters.filters.change_type) return false;
+    if (filters.filters.operation && req.operation !== filters.filters.operation) return false;
+    if (filters.filters.project && req.project !== filters.filters.project) return false;
+    return true;
+  });
+
+  // Ensure current page is valid when filtered results change
+  useEffect(() => {
+    const totalPages = Math.ceil(filteredRequests.length / pageSize);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    } else if (currentPage < 1 && filteredRequests.length > 0) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredRequests.length, pageSize]);
 
   // Handlers
   const handleViewDetails = (request: ChangeRequest) => {
@@ -127,14 +154,22 @@ export const ChangeRequestsLayout: React.FC<ChangeRequestsLayoutProps> = ({
     }
   };
 
-  // Filtered change requests
-  const filteredRequests = changeRequests.changeRequests.filter((req) => {
-    if (filters.filters.status && req.status !== filters.filters.status) return false;
-    if (filters.filters.change_type && req.change_type !== filters.filters.change_type) return false;
-    if (filters.filters.operation && req.operation !== filters.filters.operation) return false;
-    if (filters.filters.project && req.project !== filters.filters.project) return false;
-    return true;
-  });
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredRequests.length / pageSize);
+  const paginatedRequests = filteredRequests.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  // Handle page size change
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    // Recalculate current page to ensure it doesn't exceed total pages
+    const newTotalPages = Math.ceil(filteredRequests.length / newPageSize);
+    if (currentPage > newTotalPages) {
+      setCurrentPage(newTotalPages > 0 ? newTotalPages : 1);
+    }
+  };
 
   // Detail view
   if (selectedRequest) {
@@ -174,6 +209,8 @@ export const ChangeRequestsLayout: React.FC<ChangeRequestsLayoutProps> = ({
         filters={filters}
         isAdmin={isAdmin}
         projects={projects}
+        pageSize={pageSize}
+        onPageSizeChange={handlePageSizeChange}
       />
 
       {changeRequests.loading ? (
@@ -201,18 +238,31 @@ export const ChangeRequestsLayout: React.FC<ChangeRequestsLayoutProps> = ({
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {filteredRequests.map((request) => (
-            <ChangeRequestCard
-              key={request.id}
-              changeRequest={request}
-              onViewDetails={handleViewDetails}
-              onApprove={isAdmin ? handleApproveClick : undefined}
-              onReject={isAdmin ? handleRejectClick : undefined}
-              showActions={isAdmin}
+        <>
+          <div className="space-y-4">
+            {paginatedRequests.map((request) => (
+              <ChangeRequestCard
+                key={request.id}
+                changeRequest={request}
+                onViewDetails={handleViewDetails}
+                onApprove={isAdmin ? handleApproveClick : undefined}
+                onReject={isAdmin ? handleRejectClick : undefined}
+                showActions={isAdmin}
+              />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {filteredRequests.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredRequests.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
             />
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {isAdmin && selectedRequest && (
