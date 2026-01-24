@@ -8,6 +8,7 @@ import { useAuth } from "../../../context/AuthContext";
 
 // Hooks
 import { useActivities } from "../../activities/hooks/useActivities";
+import { useChangeRequests } from "../../change-requests/hooks/useChangeRequests";
 import api from "../../../api/client";
 
 // Common Components
@@ -32,6 +33,7 @@ import { ObjectiveAccordion } from "../../activities/components/ObjectiveAccordi
 
 // Modals
 import ProjectModal from "../../layout/components/ProjectModal";
+import { SubmitChangeRequestModal } from "../../change-requests/components/SubmitChangeRequestModal";
 
 // Helper functions
 import { getProjectDuration } from "../utils/calculateProjectDuration";
@@ -44,6 +46,7 @@ import {
 // Types
 import type { DetailItem } from "../utils/pieChartHelper";
 import type { Project } from "../../../types/project";
+import type { ChangeRequestCreateData } from "../../../types/changeRequest";
 
 const DashboardLayout = () => {
   // Context
@@ -83,6 +86,7 @@ const DashboardLayout = () => {
   // Hooks
   const { objectives } = useActivities(currentProject?.id);
   const activities = useActivities(currentProject?.id || null);
+  const { createChangeRequest } = useChangeRequests(currentProject?.id);
 
   // State
   const [budgetView, setBudgetView] = useState<BudgetViewType>("OVERVIEW");
@@ -98,9 +102,18 @@ const DashboardLayout = () => {
 
   //Modal states
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
+  const [isSubmitChangeRequestModalOpen, setIsSubmitChangeRequestModalOpen] = useState(false);
 
   // Editing states
   const [editingProject, setIsEditingProject] = useState<Project | null>(null);
+  const [pendingChangeRequest, setPendingChangeRequest] = useState<{
+    changeType: 'PROJECT';
+    operation: 'UPDATE';
+    entityId: number;
+    currentState: Record<string, any>;
+    proposedChanges: Record<string, any>;
+    customTitle?: string;
+  } | null>(null);
 
   // Error states
   const [editProjectError, setEditProjectError] = useState("");
@@ -195,6 +208,84 @@ const DashboardLayout = () => {
     }
   }, [currentProject, isEditProjectModalOpen]);
 
+  // Helper function to generate title based on changed fields
+  const generateChangeRequestTitle = (
+    currentState: Record<string, any>,
+    proposedChanges: Record<string, any>
+  ): string => {
+    const fieldLabels: Record<string, string> = {
+      name: "Project Name",
+      project_leader: "Project Leader",
+      description: "Description",
+      date_start: "Start Date",
+      date_end: "End Date",
+      grant_amount: "Grant Amount",
+    };
+
+    const changedFields: string[] = [];
+
+    // Check each field to see if it changed
+    Object.keys(proposedChanges).forEach((key) => {
+      const currentValue = currentState[key];
+      const proposedValue = proposedChanges[key];
+      
+      // Special handling for grant_amount (decimal field)
+      if (key === 'grant_amount') {
+        // Handle null/undefined as 0
+        const currentNum = (currentValue === null || currentValue === undefined || currentValue === '') 
+          ? 0 
+          : (typeof currentValue === 'number' ? currentValue : parseFloat(String(currentValue)) || 0);
+        const proposedNum = (proposedValue === null || proposedValue === undefined || proposedValue === '') 
+          ? 0 
+          : (typeof proposedValue === 'number' ? proposedValue : parseFloat(String(proposedValue)) || 0);
+        // Compare with small epsilon to handle floating point precision (0.01 for 2 decimal places)
+        // Only add if both are valid numbers and there's a meaningful difference
+        if (!isNaN(currentNum) && !isNaN(proposedNum) && Math.abs(currentNum - proposedNum) > 0.01) {
+          changedFields.push(key);
+        }
+        return; // Skip to next field
+      }
+      
+      // Normalize values for comparison (handle strings, numbers, dates)
+      const normalizeValue = (val: any) => {
+        if (val === null || val === undefined) return "";
+        // Handle numbers - convert to number for proper comparison
+        if (typeof val === "number") return val;
+        // Try to parse as number if it's a numeric string
+        const numVal = Number(val);
+        if (!isNaN(numVal) && val !== "" && String(numVal) === String(val).trim()) {
+          return numVal;
+        }
+        return String(val).trim();
+      };
+
+      const normalizedCurrent = normalizeValue(currentValue);
+      const normalizedProposed = normalizeValue(proposedValue);
+      
+      // Compare normalized values
+      if (normalizedCurrent !== normalizedProposed) {
+        changedFields.push(key);
+      }
+    });
+
+    // Generate title based on changed fields
+    if (changedFields.length === 0) {
+      return "Updating Project";
+    } else if (changedFields.length === 1) {
+      const fieldName = fieldLabels[changedFields[0]] || changedFields[0];
+      return `Updating ${fieldName}`;
+    } else if (changedFields.length === 2) {
+      const field1 = fieldLabels[changedFields[0]] || changedFields[0];
+      const field2 = fieldLabels[changedFields[1]] || changedFields[1];
+      return `Updating ${field1} and ${field2}`;
+    } else {
+      // For 3+ fields, show the first one and "and X more"
+      const field1 = fieldLabels[changedFields[0]] || changedFields[0];
+      const remainingCount = changedFields.length - 1;
+      return `Updating ${field1} and ${remainingCount} more`;
+    }
+  };
+
   // Handlers for editing project
   const handleOpenEditProjectModal = () => {
     setIsEditProjectModalOpen(true);
@@ -206,17 +297,56 @@ const DashboardLayout = () => {
       return;
     }
 
-    // Authorization Check
-    if (user?.role !== "Admin") {
-      setEditProjectError("You are not authorized to edit projects.");
-      return;
-    }
-
     setEditProjectError("");
 
     // Basic Field Validation
     if (!editFormData.name.trim()) {
       setEditProjectError("Project name is required.");
+      return;
+    }
+
+    // For Project Staff: Submit change request instead of direct edit
+    if (user?.role === "Project Staff" && currentProject) {
+      // Prepare current state
+      const currentState = {
+        name: currentProject.name || "",
+        project_leader: currentProject.project_leader || "",
+        description: currentProject.description || "",
+        date_start: currentProject.date_start || "",
+        date_end: currentProject.date_end || "",
+        grant_amount: currentProject.grant_amount || 0,
+      };
+
+      // Prepare proposed changes
+      const proposedChanges = {
+        name: editFormData.name,
+        project_leader: editFormData.projectLeader,
+        description: editFormData.description,
+        date_start: editFormData.startDate,
+        date_end: editFormData.endDate,
+        grant_amount: parseFloat(editFormData.totalGrant) || 0,
+      };
+
+      // Generate dynamic title based on changed fields
+      const customTitle = generateChangeRequestTitle(currentState, proposedChanges);
+
+      // Set up change request and open modal
+      setPendingChangeRequest({
+        changeType: 'PROJECT',
+        operation: 'UPDATE',
+        entityId: currentProject.id,
+        currentState,
+        proposedChanges,
+        customTitle,
+      });
+      setIsEditProjectModalOpen(false);
+      setIsSubmitChangeRequestModalOpen(true);
+      return;
+    }
+
+    // For Admin: Direct edit
+    if (user?.role !== "Admin") {
+      setEditProjectError("You are not authorized to edit projects.");
       return;
     }
 
@@ -243,6 +373,20 @@ const DashboardLayout = () => {
       setEditProjectError(
         "Something went wrong while saving changes. Please try again."
       );
+    }
+  };
+
+  // Handler for submitting change request
+  const handleSubmitChangeRequest = async (data: ChangeRequestCreateData) => {
+    if (!currentProject?.id) return;
+    
+    try {
+      await createChangeRequest(currentProject.id, data);
+      setIsSubmitChangeRequestModalOpen(false);
+      setPendingChangeRequest(null);
+    } catch (err) {
+      console.error("Failed to submit change request:", err);
+      throw err;
     }
   };
 
@@ -357,6 +501,22 @@ const DashboardLayout = () => {
         onSubmit={handleEditProject}
         userRole={user?.role}
       />
+
+      {/* Submit Change Request Modal */}
+      {pendingChangeRequest && currentProject && (
+        <SubmitChangeRequestModal
+          open={isSubmitChangeRequestModalOpen}
+          onOpenChange={setIsSubmitChangeRequestModalOpen}
+          projectId={currentProject.id}
+          changeType={pendingChangeRequest.changeType}
+          operation={pendingChangeRequest.operation}
+          entityId={pendingChangeRequest.entityId}
+          currentState={pendingChangeRequest.currentState}
+          proposedChanges={pendingChangeRequest.proposedChanges}
+          onSubmit={handleSubmitChangeRequest}
+          customTitle={pendingChangeRequest.customTitle}
+        />
+      )}
     </div>
   );
 };

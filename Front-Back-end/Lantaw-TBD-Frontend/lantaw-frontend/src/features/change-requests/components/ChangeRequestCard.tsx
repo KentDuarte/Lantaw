@@ -46,8 +46,104 @@ export const ChangeRequestCard: React.FC<ChangeRequestCardProps> = ({
     ? changeRequest.description.substring(0, 150) + '...'
     : changeRequest.description;
 
+  // Helper function to generate title for PROJECT change requests based on changed fields
+  const generateProjectChangeTitle = (
+    currentState: Record<string, any> | null,
+    proposedChanges: Record<string, any>
+  ): string | null => {
+    if (!currentState || !proposedChanges || changeRequest.change_type !== 'PROJECT') {
+      return null;
+    }
+
+    const fieldLabels: Record<string, string> = {
+      name: "Project Name",
+      project_leader: "Project Leader",
+      description: "Description",
+      date_start: "Start Date",
+      date_end: "End Date",
+      grant_amount: "Grant Amount",
+    };
+
+    const changedFields: string[] = [];
+
+    // Check each field to see if it changed
+    Object.keys(proposedChanges).forEach((key) => {
+      const currentValue = currentState[key];
+      const proposedValue = proposedChanges[key];
+      
+      // Special handling for grant_amount (decimal field)
+      if (key === 'grant_amount') {
+        // Handle null/undefined as 0
+        const currentNum = (currentValue === null || currentValue === undefined || currentValue === '') 
+          ? 0 
+          : (typeof currentValue === 'number' ? currentValue : parseFloat(String(currentValue)) || 0);
+        const proposedNum = (proposedValue === null || proposedValue === undefined || proposedValue === '') 
+          ? 0 
+          : (typeof proposedValue === 'number' ? proposedValue : parseFloat(String(proposedValue)) || 0);
+        // Compare with small epsilon to handle floating point precision (0.01 for 2 decimal places)
+        // Only add if both are valid numbers and there's a meaningful difference
+        if (!isNaN(currentNum) && !isNaN(proposedNum) && Math.abs(currentNum - proposedNum) > 0.01) {
+          changedFields.push(key);
+        }
+        return; // Skip to next field
+      }
+      
+      // Normalize values for comparison (handle strings, numbers, dates)
+      const normalizeValue = (val: any) => {
+        if (val === null || val === undefined) return "";
+        // Handle numbers - convert to number for proper comparison
+        if (typeof val === "number") return val;
+        // Try to parse as number if it's a numeric string
+        const numVal = Number(val);
+        if (!isNaN(numVal) && val !== "" && String(numVal) === String(val).trim()) {
+          return numVal;
+        }
+        return String(val).trim();
+      };
+
+      const normalizedCurrent = normalizeValue(currentValue);
+      const normalizedProposed = normalizeValue(proposedValue);
+      
+      // Compare normalized values
+      if (normalizedCurrent !== normalizedProposed) {
+        changedFields.push(key);
+      }
+    });
+
+    // Generate title based on changed fields
+    if (changedFields.length === 0) {
+      return null; // No changes detected, fall back to default
+    } else if (changedFields.length === 1) {
+      const fieldName = fieldLabels[changedFields[0]] || changedFields[0];
+      return `Updating ${fieldName}`;
+    } else if (changedFields.length === 2) {
+      const field1 = fieldLabels[changedFields[0]] || changedFields[0];
+      const field2 = fieldLabels[changedFields[1]] || changedFields[1];
+      return `Updating ${field1} and ${field2}`;
+    } else {
+      // For 3+ fields, show the first one and "and X more"
+      const field1 = fieldLabels[changedFields[0]] || changedFields[0];
+      const remainingCount = changedFields.length - 1;
+      return `Updating ${field1} and ${remainingCount} more`;
+    }
+  };
+
   // Generate auto title based on operation and change type
   const getAutoTitle = () => {
+    // Special case: PROJECT change requests - generate title based on changed fields
+    if (changeRequest.change_type === 'PROJECT' && 
+        changeRequest.operation === 'UPDATE' &&
+        changeRequest.proposed_changes &&
+        changeRequest.current_state) {
+      const projectTitle = generateProjectChangeTitle(
+        changeRequest.current_state,
+        changeRequest.proposed_changes
+      );
+      if (projectTitle) {
+        return projectTitle;
+      }
+    }
+
     // Special case: Check if it's an expense entry addition
     if (changeRequest.change_type === 'ACTIVITY' && 
         changeRequest.operation === 'UPDATE' &&

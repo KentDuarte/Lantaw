@@ -88,8 +88,70 @@ export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProp
     return String(value);
   };
 
+  // Helper function to detect changed fields
+  const getChangedFields = (currentState: Record<string, any> | null, proposedChanges: Record<string, any>): Set<string> => {
+    const changedFields = new Set<string>();
+    
+    if (!currentState || !proposedChanges) {
+      return changedFields;
+    }
+
+    // Get all unique keys from both objects
+    const allKeys = new Set([...Object.keys(currentState), ...Object.keys(proposedChanges)]);
+    
+    allKeys.forEach((key) => {
+      // Skip internal IDs
+      if (key === "id" || key === "project" || key === "project_id") {
+        return;
+      }
+
+      const currentValue = currentState[key];
+      const proposedValue = proposedChanges[key];
+      
+      // Special handling for grant_amount (decimal field)
+      if (key === 'grant_amount') {
+        const currentNum = (currentValue === null || currentValue === undefined || currentValue === '') 
+          ? 0 
+          : (typeof currentValue === 'number' ? currentValue : parseFloat(String(currentValue)) || 0);
+        const proposedNum = (proposedValue === null || proposedValue === undefined || proposedValue === '') 
+          ? 0 
+          : (typeof proposedValue === 'number' ? proposedValue : parseFloat(String(proposedValue)) || 0);
+        // Compare with small epsilon to handle floating point precision
+        if (!isNaN(currentNum) && !isNaN(proposedNum) && Math.abs(currentNum - proposedNum) > 0.01) {
+          changedFields.add(key);
+        }
+        return;
+      }
+      
+      // Normalize values for comparison
+      const normalizeValue = (val: any) => {
+        if (val === null || val === undefined) return "";
+        if (typeof val === "number") return val;
+        const numVal = Number(val);
+        if (!isNaN(numVal) && val !== "" && String(numVal) === String(val).trim()) {
+          return numVal;
+        }
+        return String(val).trim();
+      };
+
+      const normalizedCurrent = normalizeValue(currentValue);
+      const normalizedProposed = normalizeValue(proposedValue);
+      
+      if (normalizedCurrent !== normalizedProposed) {
+        changedFields.add(key);
+      }
+    });
+
+    return changedFields;
+  };
+
   // Render fields in a structured way
-  const renderFields = (fields: Record<string, any>, title: string, variant: "current" | "proposed" = "proposed") => {
+  const renderFields = (
+    fields: Record<string, any>, 
+    title: string, 
+    variant: "current" | "proposed" = "proposed",
+    changedFields?: Set<string>
+  ) => {
     if (!fields || Object.keys(fields).length === 0) {
       return null;
     }
@@ -196,12 +258,20 @@ export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProp
                     (displayKey === "department" && fields.department_name !== undefined)) {
                   return null;
                 }
+                const isChanged = changedFields?.has(key) || false;
+                const changeLabel = variant === "current" ? "Old" : "New";
                 return (
-                  <div key={key}>
-                    <Label className="text-xs text-muted-foreground">
+                  <div 
+                    key={key}
+                    className={isChanged ? "bg-yellow-100 border-2 border-yellow-400 rounded-md p-2 -m-1" : ""}
+                  >
+                    <Label className={`text-xs ${isChanged ? "text-yellow-900 font-semibold" : "text-muted-foreground"}`}>
                       {fieldLabels[displayKey] || displayKey.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+                      {isChanged && (
+                        <span className="ml-1 text-yellow-700">({changeLabel})</span>
+                      )}
                     </Label>
-                    <p className="text-sm font-medium">#{value}</p>
+                    <p className={`text-sm font-medium ${isChanged ? "text-yellow-900" : ""}`}>#{value}</p>
                   </div>
                 );
               }
@@ -210,10 +280,20 @@ export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProp
               
               // Special handling for personnel_name field in compensation (prefer name over ID)
               if (key === "personnel_name" && change_type === 'COMPENSATION') {
+                const isChanged = changedFields?.has(key) || changedFields?.has('personnel') || false;
+                const changeLabel = variant === "current" ? "Old" : "New";
                 return (
-                  <div key={key}>
-                    <Label className="text-xs text-muted-foreground">Personnel</Label>
-                    <div className="text-sm font-medium mt-1">
+                  <div 
+                    key={key}
+                    className={isChanged ? "bg-yellow-100 border-2 border-yellow-400 rounded-md p-2 -m-1" : ""}
+                  >
+                    <Label className={`text-xs ${isChanged ? "text-yellow-900 font-semibold" : "text-muted-foreground"}`}>
+                      Personnel
+                      {isChanged && (
+                        <span className="ml-1 text-yellow-700">({changeLabel})</span>
+                      )}
+                    </Label>
+                    <div className={`text-sm font-medium mt-1 ${isChanged ? "text-yellow-900" : ""}`}>
                       {value || "Not set"}
                     </div>
                   </div>
@@ -222,20 +302,42 @@ export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProp
               
               // Fallback: if personnel_name doesn't exist, try to resolve personnel ID
               if (key === "personnel" && change_type === 'COMPENSATION' && fields.personnel_name === undefined) {
+                const isChanged = changedFields?.has(key) || false;
+                const changeLabel = variant === "current" ? "Old" : "New";
                 return (
-                  <div key={key}>
-                    <Label className="text-xs text-muted-foreground">{label}</Label>
-                    <div className="text-sm font-medium mt-1">
+                  <div 
+                    key={key}
+                    className={isChanged ? "bg-yellow-100 border-2 border-yellow-400 rounded-md p-2 -m-1" : ""}
+                  >
+                    <Label className={`text-xs ${isChanged ? "text-yellow-900 font-semibold" : "text-muted-foreground"}`}>
+                      {label}
+                      {isChanged && (
+                        <span className="ml-1 text-yellow-700">({changeLabel})</span>
+                      )}
+                    </Label>
+                    <div className={`text-sm font-medium mt-1 ${isChanged ? "text-yellow-900" : ""}`}>
                       {getPersonnelName(value)}
                     </div>
                   </div>
                 );
               }
               
+              // Check if this field has changed
+              const isChanged = changedFields?.has(key) || false;
+              const changeLabel = variant === "current" ? "Old" : "New";
+              
               return (
-                <div key={key}>
-                  <Label className="text-xs text-muted-foreground">{label}</Label>
-                  <div className="text-sm font-medium mt-1">
+                <div 
+                  key={key}
+                  className={isChanged ? "bg-yellow-100 border-2 border-yellow-400 rounded-md p-2 -m-1" : ""}
+                >
+                  <Label className={`text-xs ${isChanged ? "text-yellow-900 font-semibold" : "text-muted-foreground"}`}>
+                    {label}
+                    {isChanged && (
+                      <span className="ml-1 text-yellow-700">({changeLabel})</span>
+                    )}
+                  </Label>
+                  <div className={`text-sm font-medium mt-1 ${isChanged ? "text-yellow-900" : ""}`}>
                     {renderFieldValue(key, value)}
                   </div>
                 </div>
@@ -261,10 +363,11 @@ export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProp
 
   // For UPDATE operations, show comparison
   if (operation === "UPDATE") {
+    const changedFields = getChangedFields(current_state, proposed_changes);
     return (
       <div className="space-y-4">
-        {current_state && renderFields(current_state, "Current State", "current")}
-        {renderFields(proposed_changes, "Proposed Changes", "proposed")}
+        {current_state && renderFields(current_state, "Current State", "current", changedFields)}
+        {renderFields(proposed_changes, "Proposed Changes", "proposed", changedFields)}
       </div>
     );
   }

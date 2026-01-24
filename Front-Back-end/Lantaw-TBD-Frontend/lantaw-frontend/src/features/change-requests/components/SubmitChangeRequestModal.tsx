@@ -31,6 +31,7 @@ interface SubmitChangeRequestModalProps {
   currentState?: Record<string, any> | null;
   proposedChanges: Record<string, any>;
   onSubmit: (data: ChangeRequestCreateData) => Promise<void>;
+  customTitle?: string;
 }
 
 export const SubmitChangeRequestModal: React.FC<SubmitChangeRequestModalProps> = ({
@@ -43,6 +44,7 @@ export const SubmitChangeRequestModal: React.FC<SubmitChangeRequestModalProps> =
   currentState = null,
   proposedChanges,
   onSubmit,
+  customTitle,
 }) => {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
@@ -113,7 +115,7 @@ export const SubmitChangeRequestModal: React.FC<SubmitChangeRequestModalProps> =
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Submit Change Request</DialogTitle>
+          <DialogTitle>{customTitle || "Submit Change Request"}</DialogTitle>
           <DialogDescription>
             Submit a request to {getOperationText()} this {getChangeTypeText().toLowerCase()}. An Admin will review and approve or reject your request.
           </DialogDescription>
