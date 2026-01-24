@@ -89,7 +89,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     setErrors({});
 
     try {
-      await api.put(`/api/users/${user.id}/`, {
+      await api.patch(`/api/users/${user.id}/`, {
         first_name: formData.first_name.trim(),
         last_name: formData.last_name.trim(),
         email: formData.email.trim(),

@@ -65,7 +65,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         # Make sure non-admins can't update roles or other restricted fields
         if user.role != "ADMIN":
-            protected_fields = ['role', 'is_staff', 'is_superuser', 'is_active', 'date_joined']
+            protected_fields = ['role', 'is_staff', 'is_superuser', 'is_active', 'date_joined', 'account_status']
             for field in protected_fields:
                 serializer.validated_data.pop(field, None)
 

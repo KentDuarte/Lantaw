@@ -347,6 +347,12 @@ const ActivitiesLayout = () => {
   const handleProjectStatusUpdate = async () => {
     if (!currentProject) return;
 
+    // Prevent Executives from updating project status
+    if (user?.role === "Executive") {
+      setIsProjectStatusModalOpen(false);
+      return;
+    }
+
     if (user?.role === "Project Staff") {
       // Show change request modal for Project Staff
       setPendingChangeRequest({

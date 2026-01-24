@@ -32,8 +32,8 @@ export const ActivitiesHeader: React.FC<ActivitiesHeaderProps> = ({
           </h1>
           <Badge
             variant="outline"
-            className={`text-xs ${statusStyle.badge} cursor-pointer hover:opacity-80`}
-            onClick={onEditProjectStatus}
+            className={`text-xs ${statusStyle.badge} ${userRole !== "Executive" ? "cursor-pointer hover:opacity-80" : ""}`}
+            onClick={userRole !== "Executive" ? onEditProjectStatus : undefined}
           >
             <div className={`w-2 h-2 rounded-full ${statusStyle.bg} mr-2`} />
             {projectStatus.replace(/_/g, " ")}
