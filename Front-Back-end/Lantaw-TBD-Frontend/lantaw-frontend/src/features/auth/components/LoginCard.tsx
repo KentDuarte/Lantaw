@@ -40,22 +40,26 @@ export default function LoginCard() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md">
-        <div className="mb-4">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <header className="flex items-center justify-between px-8 py-6 border-b">
+        <div className="flex items-center gap-3">
           <Button variant="outline" onClick={() => navigate("/")}>
             Back
           </Button>
         </div>
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 rounded-xl bg-primary">
-              <Eye className="h-8 w-8 text-primary-foreground" />
+      </header>
+
+      <main className="flex-1 flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="p-3 rounded-xl bg-primary">
+                <Eye className="h-8 w-8 text-primary-foreground" />
+              </div>
             </div>
+            <h1 className="mb-2">Welcome to Lantaw</h1>
           </div>
-          <h1 className="mb-2">Welcome to Lantaw</h1>
-        </div>
-        <div className="bg-card border border-border rounded-xl p-8 shadow-sm">
+          <div className="bg-card border border-border rounded-xl p-8 shadow-sm">
           <div className="mb-6">
             <h3 className="mb-1">Sign In</h3>
           </div>
@@ -75,7 +79,8 @@ export default function LoginCard() {
             </p>
           </div>
         </div>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

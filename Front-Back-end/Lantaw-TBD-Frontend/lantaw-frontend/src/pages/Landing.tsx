@@ -35,9 +35,9 @@ export default function Landing() {
 
       {/* Center content */}
       <main className="flex-1 flex items-center justify-center px-4">
-        <div className="text-center max-w-xl">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">
-            Welcome to Lantaw
+        <div className="text-center max-w-xl -mt-[150px]">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-4">
+            LANTAW
           </h1>
          
        
