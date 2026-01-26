@@ -396,18 +396,41 @@ def _update_project(entity_id, proposed_changes, current_state):
     """Update an existing Project."""
     project = get_object_or_404(Project, pk=entity_id)
     
-    # Validate current_state matches (optional check)
-    if current_state:
-        if project.name != current_state.get('name'):
-            raise ValidationError("Current state mismatch. Project has been modified.")
+    # Validate current_state matches only for fields that are being changed
+    # This allows partial updates (e.g., only updating project_status)
+    if current_state and proposed_changes:
+        # Check only the fields that are in proposed_changes
+        for field in proposed_changes.keys():
+            if field in current_state:
+                current_value = getattr(project, field, None)
+                # Handle special cases
+                if field == 'grant_amount':
+                    # Compare as float for grant_amount
+                    current_val = float(current_value) if current_value is not None else 0.0
+                    state_val = float(current_state.get(field, 0)) if current_state.get(field) is not None else 0.0
+                    if abs(current_val - state_val) > 0.01:
+                        raise ValidationError(f"Current state mismatch. Project {field} has been modified.")
+                else:
+                    # For other fields, compare directly
+                    if str(current_value) != str(current_state.get(field)):
+                        raise ValidationError(f"Current state mismatch. Project {field} has been modified.")
     
-    project.name = proposed_changes.get('name', project.name)
-    project.project_leader = proposed_changes.get('project_leader', project.project_leader)
-    project.description = proposed_changes.get('description', project.description)
-    project.grant_amount = proposed_changes.get('grant_amount', project.grant_amount)
-    project.project_status = proposed_changes.get('project_status', project.project_status)
-    project.date_start = proposed_changes.get('date_start', project.date_start)
-    project.date_end = proposed_changes.get('date_end', project.date_end)
+    # Update only the fields that are in proposed_changes
+    if 'name' in proposed_changes:
+        project.name = proposed_changes.get('name')
+    if 'project_leader' in proposed_changes:
+        project.project_leader = proposed_changes.get('project_leader')
+    if 'description' in proposed_changes:
+        project.description = proposed_changes.get('description')
+    if 'grant_amount' in proposed_changes:
+        project.grant_amount = proposed_changes.get('grant_amount')
+    if 'project_status' in proposed_changes:
+        project.project_status = proposed_changes.get('project_status')
+    if 'date_start' in proposed_changes:
+        project.date_start = proposed_changes.get('date_start')
+    if 'date_end' in proposed_changes:
+        project.date_end = proposed_changes.get('date_end')
+    
     project.full_clean()  # This will validate date_start <= date_end
     project.save()
     return project

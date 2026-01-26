@@ -1,7 +1,7 @@
 // Single objective accordion item with activities list.
 // Handles expand/collapse and displays activities.
 
-import React from "react";
+import React, { useRef } from "react";
 import { Card, CardContent, CardTitle } from "../../../components/common/card";
 import {
   AccordionContent,
@@ -49,6 +49,17 @@ export const ObjectiveAccordion: React.FC<ObjectiveAccordionProps> = ({
   const rawActivities = activities;
   const hasData = (rawActivities?.length ?? 0) > 0;
   const isFilterEmpty = hasData && activities?.length === 0;
+  const accordionTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const handleChevronClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Trigger the accordion toggle by clicking the AccordionTrigger
+    if (accordionTriggerRef.current) {
+      accordionTriggerRef.current.click();
+    }
+    // Also call onExpand to fetch activities if needed
+    onExpand(objective.id);
+  };
 
   return (
     <AccordionItem
@@ -60,60 +71,66 @@ export const ObjectiveAccordion: React.FC<ObjectiveAccordionProps> = ({
         {/* Header / Trigger */}
         <div className="flex items-center justify-between w-full px-6 py-4">
           <AccordionTrigger
+            ref={accordionTriggerRef}
             onClick={() => onExpand(objective.id)}
             className="hover:no-underline py-0 [&>svg]:hidden flex-1"
           >
-            <div className="flex items-center justify-between w-full mr-4">
-              <div className="text-left">
-                <CardTitle className="text-lg mb-1">{objective.title}</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {objective.description || "No description provided."}
-                </p>
-              </div>
-              <div className="w-4 h-4 flex items-center justify-center ml-2">
-                <ChevronDown className="h-4 w-4 transform transition-transform duration-200 group-data-[state=open]:rotate-180" />
-              </div>
+            <div className="text-left mr-4">
+              <CardTitle className="text-lg mb-1">{objective.title}</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {objective.description || "No description provided."}
+              </p>
             </div>
           </AccordionTrigger>
 
-          {/* Action Buttons - Outside of AccordionTrigger to avoid nested buttons */}
-          {showActions && (
-            <div className="flex items-center gap-3 ml-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditObjective?.(objective);
-                }}
-                className="h-8 w-8 p-0"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
+          {/* Action Buttons and Chevron - Outside of AccordionTrigger to avoid nested buttons */}
+          <div className="flex items-center gap-3">
+            {showActions && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditObjective?.(objective);
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteObjective?.(objective);
-                }}
-                className="h-8 w-8 p-0"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-              <Button
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddActivity?.(objective);
-                }}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                <Plus className="h-4 w-4 mr-1" /> Add Activity
-              </Button>
-            </div>
-          )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteObjective?.(objective);
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddActivity?.(objective);
+                  }}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Add Activity
+                </Button>
+              </>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleChevronClick}
+              className="h-8 w-8 p-0 hover:bg-transparent hover:text-foreground"
+            >
+              <ChevronDown className="h-4 w-4 transform transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            </Button>
+          </div>
         </div>
 
         {/* Content Body */}
