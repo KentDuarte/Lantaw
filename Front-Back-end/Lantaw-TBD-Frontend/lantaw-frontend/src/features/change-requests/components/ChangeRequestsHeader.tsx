@@ -62,6 +62,7 @@ export const ChangeRequestsHeader: React.FC<ChangeRequestsHeaderProps> = ({
                   <SelectItem value="PENDING">Pending</SelectItem>
                   <SelectItem value="APPROVED">Approved</SelectItem>
                   <SelectItem value="REJECTED">Rejected</SelectItem>
+                  <SelectItem value="CANCELED">Canceled</SelectItem>
                 </SelectContent>
               </Select>
 

@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
 import { Button } from "../components/common/button";
+import { useAuth } from "../context/AuthContext";
+import type { Activity } from "../types/activity";
+import type { Objective } from "../types/objective";
 
 interface Project {
   id: number;
@@ -9,12 +12,102 @@ interface Project {
   project_leader?: string;
 }
 
+type ActivityStatus = "Active" | "Inactive" | "Completed" | "Unknown";
+
 export default function PublicProjects() {
   const navigate = useNavigate();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activityStatuses, setActivityStatuses] = useState<Record<number, ActivityStatus>>({});
+  const [loadingActivities, setLoadingActivities] = useState(false);
 
+  // Function to fetch all activities for a project
+  const fetchAllActivitiesForProject = async (projectId: number): Promise<Activity[]> => {
+    try {
+      // Fetch all objectives for the project
+      const objectivesResponse = await api.get<{ results: Objective[] }>(
+        `/api/projects/${projectId}/objectives/`
+      );
+      const objectives = Array.isArray(objectivesResponse.data)
+        ? objectivesResponse.data
+        : (objectivesResponse.data?.results || []);
+
+      // Fetch activities for each objective in parallel
+      const activityPromises = objectives.map(async (objective) => {
+        try {
+          const activitiesResponse = await api.get<{ results: Activity[] }>(
+            `/api/projects/${projectId}/objectives/${objective.id}/activities/`
+          );
+          return Array.isArray(activitiesResponse.data)
+            ? activitiesResponse.data
+            : (activitiesResponse.data?.results || []);
+        } catch (err) {
+          console.error(`Failed to fetch activities for objective ${objective.id}:`, err);
+          return [];
+        }
+      });
+
+      const activitiesArrays = await Promise.all(activityPromises);
+      // Flatten all activities into a single array
+      return activitiesArrays.flat();
+    } catch (err) {
+      console.error(`Failed to fetch activities for project ${projectId}:`, err);
+      return [];
+    }
+  };
+
+  // Function to calculate activity status based on all activities
+  const calculateActivityStatus = (activities: Activity[]): ActivityStatus => {
+    if (activities.length === 0) {
+      return "Inactive";
+    }
+
+    // Check if any activity is ACTIVE
+    const hasActive = activities.some((activity) => activity.activity_status === "ACTIVE");
+    if (hasActive) {
+      return "Active";
+    }
+
+    // Check if all activities are COMPLETED
+    const allCompleted = activities.every(
+      (activity) => activity.activity_status === "COMPLETED"
+    );
+    if (allCompleted) {
+      return "Completed";
+    }
+
+    // Check if all activities are PENDING
+    const allPending = activities.every(
+      (activity) => activity.activity_status === "PENDING"
+    );
+    if (allPending) {
+      return "Inactive";
+    }
+
+    // Mixed statuses - find the most common status
+    const statusCounts: Record<string, number> = {};
+    activities.forEach((activity) => {
+      const status = activity.activity_status;
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+    });
+
+    const mostCommonStatus = Object.entries(statusCounts).reduce((a, b) =>
+      a[1] > b[1] ? a : b
+    )[0];
+
+    // Map status to display value
+    if (mostCommonStatus === "COMPLETED") {
+      return "Completed";
+    } else if (mostCommonStatus === "PENDING") {
+      return "Inactive";
+    } else {
+      return "Active";
+    }
+  };
+
+  // First effect: Fetch projects (always runs)
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -22,16 +115,55 @@ export default function PublicProjects() {
         const data = response.data;
         const items: Project[] = Array.isArray(data) ? data : [];
         setProjects(items);
+        setLoading(false);
       } catch (err) {
         console.error("Failed to fetch projects", err);
         setError("Unable to load projects.");
-      } finally {
         setLoading(false);
       }
     };
 
     fetchProjects();
-  }, []);
+  }, []); // No dependencies - always fetch projects
+
+  // Second effect: Fetch activities (runs after auth is determined and projects are loaded)
+  useEffect(() => {
+    // Don't fetch if auth is still loading or if no projects
+    if (authLoading || projects.length === 0) {
+      return;
+    }
+
+    // Fetch activities for all users (public access)
+    setLoadingActivities(true);
+    const fetchActivities = async () => {
+      try {
+        const activityPromises = projects.map(async (project) => {
+          const activities = await fetchAllActivitiesForProject(project.id);
+          const status = calculateActivityStatus(activities);
+          return { projectId: project.id, status };
+        });
+
+        const results = await Promise.all(activityPromises);
+        const statusMap: Record<number, ActivityStatus> = {};
+        results.forEach(({ projectId, status }) => {
+          statusMap[projectId] = status;
+        });
+        setActivityStatuses(statusMap);
+      } catch (err) {
+        console.error("Failed to fetch activity statuses:", err);
+        // Set all to Unknown on error
+        const unknownMap: Record<number, ActivityStatus> = {};
+        projects.forEach((project) => {
+          unknownMap[project.id] = "Unknown";
+        });
+        setActivityStatuses(unknownMap);
+      } finally {
+        setLoadingActivities(false);
+      }
+    };
+
+    fetchActivities();
+  }, [authLoading, projects]); // Depend on auth loading state and projects
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -64,18 +196,47 @@ export default function PublicProjects() {
                 <thead className="bg-muted">
                   <tr>
                     <th className="px-4 py-3 text-left text-sm font-semibold">NAME</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">ACTIVITIES</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">LEADER</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {projects.map((project) => (
-                    <tr key={project.id} className="border-t">
-                      <td className="px-4 py-3 text-sm">{project.name}</td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground">
-                        {project.project_leader || '-'}
-                      </td>
-                    </tr>
-                  ))}
+                  {projects.map((project) => {
+                    const status = activityStatuses[project.id];
+                    const getStatusStyle = (status: ActivityStatus | undefined) => {
+                      if (!status || status === "Unknown") {
+                        return "text-muted-foreground";
+                      }
+                      switch (status) {
+                        case "Active":
+                          return "text-green-600 font-medium";
+                        case "Completed":
+                          return "text-blue-600 font-medium";
+                        case "Inactive":
+                          return "text-gray-600";
+                        default:
+                          return "text-muted-foreground";
+                      }
+                    };
+
+                    return (
+                      <tr key={project.id} className="border-t">
+                        <td className="px-4 py-3 text-sm">{project.name}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {loadingActivities ? (
+                            <span className="text-muted-foreground">Loading...</span>
+                          ) : (
+                            <span className={getStatusStyle(status)}>
+                              {status || "-"}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          {project.project_leader || '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

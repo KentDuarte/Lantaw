@@ -9,6 +9,7 @@ import { ChangeRequestCard } from "./ChangeRequestCard";
 import { ChangeRequestDetail } from "./ChangeRequestDetail";
 import { ApproveChangeRequestModal } from "./modals/ApproveChangeRequestModal";
 import { RejectChangeRequestModal } from "./modals/RejectChangeRequestModal";
+import { CancelChangeRequestModal } from "./modals/CancelChangeRequestModal";
 import { Card, CardContent } from "../../../components/common/card";
 import { Pagination } from "../../../components/common/pagination";
 import type { ChangeRequest } from "../../../types/changeRequest";
@@ -32,6 +33,7 @@ export const ChangeRequestsLayout: React.FC<ChangeRequestsLayoutProps> = ({
   const [selectedRequest, setSelectedRequest] = useState<ChangeRequest | null>(null);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   
   // Pagination state
@@ -118,6 +120,11 @@ export const ChangeRequestsLayout: React.FC<ChangeRequestsLayoutProps> = ({
     setIsRejectModalOpen(true);
   };
 
+  const handleCancelClick = (request: ChangeRequest) => {
+    setSelectedRequest(request);
+    setIsCancelModalOpen(true);
+  };
+
   const handleApprove = async () => {
     if (!selectedRequest) return;
     try {
@@ -141,6 +148,24 @@ export const ChangeRequestsLayout: React.FC<ChangeRequestsLayoutProps> = ({
     try {
       await changeRequests.rejectChangeRequest(selectedRequest.project, selectedRequest.id, reason);
       setIsRejectModalOpen(false);
+      // Refresh the list
+      await changeRequests.fetchChangeRequests(projectId || undefined, filters.filters);
+      // Refresh the selected request detail view
+      const updatedRequest = await changeRequests.fetchChangeRequestById(selectedRequest.project, selectedRequest.id);
+      if (updatedRequest) {
+        setSelectedRequest(updatedRequest);
+      }
+    } catch (error) {
+      // Error is handled by the hook, just re-throw to let modal handle it
+      throw error;
+    }
+  };
+
+  const handleCancel = async (reason: string) => {
+    if (!selectedRequest) return;
+    try {
+      await changeRequests.cancelChangeRequest(selectedRequest.project, selectedRequest.id, reason);
+      setIsCancelModalOpen(false);
       // Refresh the list
       await changeRequests.fetchChangeRequests(projectId || undefined, filters.filters);
       // Refresh the selected request detail view
@@ -180,6 +205,7 @@ export const ChangeRequestsLayout: React.FC<ChangeRequestsLayoutProps> = ({
           onBack={handleBackToList}
           onApprove={isAdmin ? () => handleApproveClick(selectedRequest) : undefined}
           onReject={isAdmin ? () => handleRejectClick(selectedRequest) : undefined}
+          onCancel={isProjectStaff ? () => handleCancelClick(selectedRequest) : undefined}
           showActions={isAdmin}
         />
         {isAdmin && (
@@ -197,6 +223,14 @@ export const ChangeRequestsLayout: React.FC<ChangeRequestsLayoutProps> = ({
               onReject={handleReject}
             />
           </>
+        )}
+        {isProjectStaff && (
+          <CancelChangeRequestModal
+            open={isCancelModalOpen}
+            onOpenChange={setIsCancelModalOpen}
+            changeRequest={selectedRequest}
+            onCancel={handleCancel}
+          />
         )}
       </>
     );
@@ -247,6 +281,7 @@ export const ChangeRequestsLayout: React.FC<ChangeRequestsLayoutProps> = ({
                 onViewDetails={handleViewDetails}
                 onApprove={isAdmin ? handleApproveClick : undefined}
                 onReject={isAdmin ? handleRejectClick : undefined}
+                onCancel={isProjectStaff ? handleCancelClick : undefined}
                 showActions={isAdmin}
               />
             ))}
@@ -280,6 +315,14 @@ export const ChangeRequestsLayout: React.FC<ChangeRequestsLayoutProps> = ({
             onReject={handleReject}
           />
         </>
+      )}
+      {isProjectStaff && selectedRequest && (
+        <CancelChangeRequestModal
+          open={isCancelModalOpen}
+          onOpenChange={setIsCancelModalOpen}
+          changeRequest={selectedRequest}
+          onCancel={handleCancel}
+        />
       )}
     </div>
   );

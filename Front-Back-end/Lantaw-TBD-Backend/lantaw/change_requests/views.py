@@ -339,3 +339,55 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
             
             serializer = self.get_serializer(change_request)
             return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'], url_path='cancel')
+    def cancel(self, request, pk=None, project_pk=None):
+        """
+        Cancel a change request. Only Project Staff can cancel their own pending requests.
+        """
+        change_request = self.get_object()
+        user = request.user
+        
+        # Only Project Staff can cancel
+        if user.role != "PROJECT_STAFF":
+            return Response(
+                {'error': 'Only Project Staff can cancel change requests'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Only the submitter can cancel their own request
+        if change_request.submitted_by != user:
+            return Response(
+                {'error': 'You can only cancel your own change requests'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Validate status
+        if change_request.status != 'PENDING':
+            return Response(
+                {'error': f'Cannot cancel change request with status {change_request.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get cancel reason from request
+        cancel_reason = request.data.get('cancel_reason', '')
+        
+        # Use select_for_update to prevent concurrent cancellations
+        with transaction.atomic():
+            change_request = ChangeRequest.objects.select_for_update().get(pk=change_request.pk)
+            
+            # Double-check status after locking
+            if change_request.status != 'PENDING':
+                return Response(
+                    {'error': f'Change request status changed to {change_request.status}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update change request status
+            change_request.status = 'CANCELED'
+            change_request.date_processed = timezone.now()
+            change_request.cancel_reason = cancel_reason
+            change_request.save()
+            
+            serializer = self.get_serializer(change_request)
+            return Response(serializer.data, status=status.HTTP_200_OK)

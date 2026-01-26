@@ -30,6 +30,11 @@ export const getStatusStyle = (status: ChangeRequest['status']): StatusStyle => 
         text: 'Rejected',
         badge: 'bg-destructive text-white',
       };
+    case 'CANCELED':
+      return {
+        text: 'Canceled',
+        badge: 'bg-gray-500 text-white',
+      };
     default:
       return {
         text: status,

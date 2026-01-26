@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { Button } from "../../../components/common/button";
 import { Badge } from "../../../components/common/badge";
 import { Card, CardContent, CardHeader } from "../../../components/common/card";
-import { Eye, Check, X, Calendar, User } from "lucide-react";
+import { Eye, Check, X, Calendar, User, XCircle } from "lucide-react";
 import type { ChangeRequest } from "../../../types/changeRequest";
 import { getStatusStyle, getOperationStyle, getChangeTypeDisplayName } from "../utils/statusHelpers";
+import { useAuth } from "../../../context/AuthContext";
 // Date formatting helper
 const formatDateDistance = (dateString: string): string => {
   const date = new Date(dateString);
@@ -26,6 +27,7 @@ interface ChangeRequestCardProps {
   onViewDetails: (request: ChangeRequest) => void;
   onApprove?: (request: ChangeRequest) => void;
   onReject?: (request: ChangeRequest) => void;
+  onCancel?: (request: ChangeRequest) => void;
   showActions?: boolean;
 }
 
@@ -34,14 +36,19 @@ export const ChangeRequestCard: React.FC<ChangeRequestCardProps> = ({
   onViewDetails,
   onApprove,
   onReject,
+  onCancel,
   showActions = false,
 }) => {
+  const { user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const statusStyle = getStatusStyle(changeRequest.status);
   const operationStyle = getOperationStyle(changeRequest.operation);
   const changeTypeName = getChangeTypeDisplayName(changeRequest.change_type);
   
   const isProcessed = changeRequest.status !== 'PENDING';
+  const isProjectStaff = user?.role === "Project Staff";
+  const isOwnRequest = user?.id === changeRequest.submitted_by;
+  const canCancel = isProjectStaff && isOwnRequest && changeRequest.status === 'PENDING';
   const descriptionPreview = changeRequest.description.length > 150
     ? changeRequest.description.substring(0, 150) + '...'
     : changeRequest.description;
@@ -285,6 +292,22 @@ export const ChangeRequestCard: React.FC<ChangeRequestCardProps> = ({
               <Eye className="h-3 w-3 mr-1" />
               View
             </Button>
+            
+            {/* Cancel Request button - for Project Staff on their own pending requests */}
+            {canCancel && onCancel && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCancel(changeRequest);
+                }}
+                className="h-8"
+              >
+                <XCircle className="h-3 w-3 mr-1" />
+                Cancel Request
+              </Button>
+            )}
             
             {/* Approve/Reject buttons - only for admins */}
             {showActions && (

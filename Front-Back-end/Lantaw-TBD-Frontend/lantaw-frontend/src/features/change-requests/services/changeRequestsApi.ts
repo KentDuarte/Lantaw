@@ -110,5 +110,14 @@ export const changeRequestsApi = {
     );
     return res.data;
   },
+
+  // Cancel change request
+  cancel: async (projectId: number, requestId: number, reason: string): Promise<ChangeRequest> => {
+    const res = await api.post<ChangeRequest>(
+      `/api/projects/${projectId}/change-requests/${requestId}/cancel/`,
+      { cancel_reason: reason }
+    );
+    return res.data;
+  },
 };
 

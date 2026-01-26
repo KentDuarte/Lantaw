@@ -2,17 +2,19 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/common/card";
 import { Button } from "../../../components/common/button";
 import { Badge } from "../../../components/common/badge";
-import { Check, X, ArrowLeft, Calendar, User } from "lucide-react";
+import { Check, X, ArrowLeft, Calendar, User, XCircle } from "lucide-react";
 import type { ChangeRequest } from "../../../types/changeRequest";
 import { getStatusStyle, getOperationStyle, getChangeTypeDisplayName } from "../utils/statusHelpers";
 import { formatDate } from "../../../utils/formatHelpers";
 import { ChangeRequestFieldsDisplay } from "./ChangeRequestFieldsDisplay";
+import { useAuth } from "../../../context/AuthContext";
 
 interface ChangeRequestDetailProps {
   changeRequest: ChangeRequest;
   onBack: () => void;
   onApprove?: () => void;
   onReject?: () => void;
+  onCancel?: () => void;
   showActions?: boolean;
 }
 
@@ -21,12 +23,17 @@ export const ChangeRequestDetail: React.FC<ChangeRequestDetailProps> = ({
   onBack,
   onApprove,
   onReject,
+  onCancel,
   showActions = false,
 }) => {
+  const { user } = useAuth();
   const statusStyle = getStatusStyle(changeRequest.status);
   const operationStyle = getOperationStyle(changeRequest.operation);
   const changeTypeName = getChangeTypeDisplayName(changeRequest.change_type);
   const isProcessed = changeRequest.status !== 'PENDING';
+  const isProjectStaff = user?.role === "Project Staff";
+  const isOwnRequest = user?.id === changeRequest.submitted_by;
+  const canCancel = isProjectStaff && isOwnRequest && changeRequest.status === 'PENDING';
 
   return (
     <div className="space-y-4">
@@ -36,25 +43,33 @@ export const ChangeRequestDetail: React.FC<ChangeRequestDetailProps> = ({
           <ArrowLeft className="h-4 w-4" />
           Back to List
         </Button>
-        {showActions && !isProcessed && (
-          <div className="flex gap-2">
-            {onApprove && (
-              <Button
-                onClick={onApprove}
-                className="bg-green-500 hover:bg-green-600"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Approve
-              </Button>
-            )}
-            {onReject && (
-              <Button variant="destructive" onClick={onReject}>
-                <X className="h-4 w-4 mr-2" />
-                Reject
-              </Button>
-            )}
-          </div>
-        )}
+        <div className="flex gap-2">
+          {showActions && !isProcessed && (
+            <>
+              {onApprove && (
+                <Button
+                  onClick={onApprove}
+                  className="bg-green-500 hover:bg-green-600"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Approve
+                </Button>
+              )}
+              {onReject && (
+                <Button variant="destructive" onClick={onReject}>
+                  <X className="h-4 w-4 mr-2" />
+                  Reject
+                </Button>
+              )}
+            </>
+          )}
+          {canCancel && onCancel && (
+            <Button variant="outline" onClick={onCancel}>
+              <XCircle className="h-4 w-4 mr-2" />
+              Cancel Request
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Main Detail Card */}
@@ -140,6 +155,16 @@ export const ChangeRequestDetail: React.FC<ChangeRequestDetailProps> = ({
               <p className="text-sm text-muted-foreground mb-2">Rejection Reason</p>
               <div className="bg-destructive/10 border border-destructive/20 rounded-md p-4">
                 <p className="text-sm">{changeRequest.rejection_reason}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Cancel Reason */}
+          {changeRequest.cancel_reason && (
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">Cancel Reason</p>
+              <div className="bg-gray-100 border border-gray-200 rounded-md p-4">
+                <p className="text-sm">{changeRequest.cancel_reason}</p>
               </div>
             </div>
           )}

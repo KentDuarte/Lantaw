@@ -18,6 +18,7 @@ interface UseChangeRequestsReturn {
   createChangeRequest: (projectId: number, data: ChangeRequestCreateData) => Promise<void>;
   approveChangeRequest: (projectId: number, requestId: number) => Promise<void>;
   rejectChangeRequest: (projectId: number, requestId: number, reason: string) => Promise<void>;
+  cancelChangeRequest: (projectId: number, requestId: number, reason: string) => Promise<void>;
   
   // Error handling
   error: Error | null;
@@ -141,6 +142,26 @@ export const useChangeRequests = (projectId?: number | null): UseChangeRequestsR
     }
   }, []);
 
+  // Cancel change request
+  const cancelChangeRequest = useCallback(async (
+    targetProjectId: number,
+    requestId: number,
+    reason: string
+  ) => {
+    setError(null);
+    try {
+      const updatedRequest = await changeRequestsApi.cancel(targetProjectId, requestId, reason);
+      setChangeRequests((prev) =>
+        prev.map((req) => (req.id === requestId ? updatedRequest : req))
+      );
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error("Failed to cancel change request");
+      setError(error);
+      console.error("Failed to cancel change request:", err);
+      throw error;
+    }
+  }, []);
+
   // Initial fetch
   useEffect(() => {
     if (projectId || user?.role === "Admin") {
@@ -156,6 +177,7 @@ export const useChangeRequests = (projectId?: number | null): UseChangeRequestsR
     createChangeRequest,
     approveChangeRequest,
     rejectChangeRequest,
+    cancelChangeRequest,
     error,
   };
 };

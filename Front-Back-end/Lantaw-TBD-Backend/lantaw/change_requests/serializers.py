@@ -31,6 +31,7 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
             'date_submitted',
             'date_processed',
             'rejection_reason',
+            'cancel_reason',
         ]
         read_only_fields = [
             'id',

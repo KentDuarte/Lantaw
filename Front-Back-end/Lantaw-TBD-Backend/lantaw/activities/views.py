@@ -6,6 +6,11 @@ from projects.models import Project
 
 class IsAdminExecutiveOrProjectStaff(permissions.BasePermission):
     def has_permission(self, request, view):
+        # Allow public read access (GET, HEAD, OPTIONS) for list and retrieve actions
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        # For write operations, require authentication
         if not request.user.is_authenticated:
             return False
         
@@ -23,6 +28,14 @@ class IsAdminExecutiveOrProjectStaff(permissions.BasePermission):
         return False
 
     def has_object_permission(self, request, view, obj):
+        # Allow public read access
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        # For write operations, require authentication
+        if not request.user.is_authenticated:
+            return False
+        
         user = request.user
 
         if user.role == "ADMIN":
@@ -56,6 +69,10 @@ class ObjectiveViewSet(viewsets.ModelViewSet):
         # Get the objectives related to the project 
         qs = Objective.objects.filter(project_id=project_pk) 
 
+        # Public access: return all objectives for the project
+        if not user.is_authenticated:
+            return qs
+
         if user.role == "ADMIN":
             return qs
         elif user.role == "EXECUTIVE":
@@ -88,6 +105,10 @@ class ActivityViewSet(viewsets.ModelViewSet):
 
         # Get the activities related to the objective
         qs = Activity.objects.filter(objective_id=objective_pk)
+
+        # Public access: return all activities for the objective
+        if not user.is_authenticated:
+            return qs
 
         if user.role == "ADMIN":
             return qs

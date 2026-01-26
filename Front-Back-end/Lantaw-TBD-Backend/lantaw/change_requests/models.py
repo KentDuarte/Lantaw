@@ -13,6 +13,7 @@ class ChangeRequest(models.Model):
         ('PENDING', 'Pending'),
         ('APPROVED', 'Approved'),
         ('REJECTED', 'Rejected'),
+        ('CANCELED', 'Canceled'),
     ]
     
     CHANGE_TYPE_CHOICES = [
@@ -52,6 +53,7 @@ class ChangeRequest(models.Model):
     date_submitted = models.DateTimeField(auto_now_add=True)
     date_processed = models.DateTimeField(null=True, blank=True)
     rejection_reason = models.TextField(blank=True)
+    cancel_reason = models.TextField(blank=True)
     
     class Meta:
         ordering = ['-date_submitted']

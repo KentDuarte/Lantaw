@@ -6,7 +6,7 @@ export interface ChangeRequest {
   submitted_by_name?: string;
   change_type: 'ACTIVITY' | 'OBJECTIVE' | 'PERSONNEL' | 'BUDGET' | 'COMPENSATION' | 'PROJECT' | 'ROLE' | 'DEPARTMENT';
   operation: 'CREATE' | 'UPDATE' | 'DELETE';
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELED';
   description: string;
   entity_id?: number | null;  // ID of entity being changed (null for CREATE)
   current_state?: Record<string, any> | null;  // Current state for UPDATE/DELETE
@@ -16,6 +16,7 @@ export interface ChangeRequest {
   date_submitted: string;
   date_processed?: string | null;
   rejection_reason?: string;
+  cancel_reason?: string;
 }
 
 export interface ChangeRequestCreateData {
