@@ -14,6 +14,7 @@ import { useCompensation } from "../hooks/useCompensation";
 import { useRole } from "../hooks/useRole";
 import { useDepartment } from "../hooks/useDepartment";
 import { useActivities } from "../../../features/activities/hooks/useActivities";
+import { useChangeRequests } from "../../change-requests/hooks/useChangeRequests";
 
 // Components
 import { PersonnelHeader } from "./PersonnelHeader";
@@ -37,6 +38,7 @@ const PersonnelLayout = () => {
   const { currentProject } = useProject();
   const { user } = useAuth();
   const filters = usePersonnelFilters();
+  const { changeRequests } = useChangeRequests(currentProject?.id);
 
   const personnel = usePersonnel(currentProject?.id || null);
   const {
@@ -98,6 +100,73 @@ const PersonnelLayout = () => {
       department_name: deptObj?.name || "",
     };
   };
+
+  // Helper function to get changed fields from currentState and proposedChanges
+  const getChangedFields = (
+    currentState: Record<string, any> | null,
+    proposedChanges: Record<string, any>
+  ): Set<string> => {
+    const changedFields = new Set<string>();
+    
+    if (!currentState) return changedFields;
+
+    Object.keys(proposedChanges).forEach((key) => {
+      // Skip internal fields
+      if (key === 'id' || key === 'project' || key === 'personnel_name' || key === 'role_name' || key === 'department_name') {
+        return;
+      }
+
+      const currentValue = currentState[key];
+      const proposedValue = proposedChanges[key];
+
+      // Special handling for numeric fields (amounts)
+      if (key === 'amount') {
+        const currentNum = (currentValue === null || currentValue === undefined || currentValue === '')
+          ? 0
+          : (typeof currentValue === 'number' ? currentValue : parseFloat(String(currentValue)) || 0);
+        const proposedNum = (proposedValue === null || proposedValue === undefined || proposedValue === '')
+          ? 0
+          : (typeof proposedValue === 'number' ? proposedValue : parseFloat(String(proposedValue)) || 0);
+        if (!isNaN(currentNum) && !isNaN(proposedNum) && Math.abs(currentNum - proposedNum) > 0.01) {
+          changedFields.add(key);
+        }
+        return;
+      }
+
+      // Normalize values for comparison
+      const normalizeValue = (val: any) => {
+        if (val === null || val === undefined) return "";
+        if (typeof val === "number") return val;
+        const numVal = Number(val);
+        if (!isNaN(numVal) && val !== "" && String(numVal) === String(val).trim()) {
+          return numVal;
+        }
+        return String(val).trim();
+      };
+
+      const normalizedCurrent = normalizeValue(currentValue);
+      const normalizedProposed = normalizeValue(proposedValue);
+
+      if (normalizedCurrent !== normalizedProposed) {
+        changedFields.add(key);
+      }
+    });
+
+    return changedFields;
+  };
+
+  // Get pending change requests for the current project
+  const pendingChangeRequests = useMemo(() => {
+    if (!currentProject?.id || user?.role !== "Project Staff") {
+      return [];
+    }
+    return changeRequests.filter(
+      (req) =>
+        req.project === currentProject.id &&
+        (req.change_type === "PERSONNEL" || req.change_type === "COMPENSATION") &&
+        req.status === "PENDING"
+    );
+  }, [changeRequests, currentProject?.id, user?.role]);
 
   // Editing states
   const [editingPersonnel, setEditingPersonnel] = useState<Personnel | null>(
@@ -166,18 +235,67 @@ const PersonnelLayout = () => {
     if (!editingPersonnel) return;
     
     if (user?.role === "Project Staff" && currentProject) {
+      const currentState = resolvePersonnelFields({
+        first_name: editingPersonnel.first_name,
+        last_name: editingPersonnel.last_name,
+        role: editingPersonnel.role,
+        department: editingPersonnel.department,
+        employment_status: editingPersonnel.employment_status,
+      });
+      const proposedChanges = resolvePersonnelFields(data);
+
+      // Check for field-level conflicts with pending requests
+      const fieldsBeingChanged = getChangedFields(currentState, proposedChanges);
+      
+      const fieldLabels: Record<string, string> = {
+        first_name: "First Name",
+        last_name: "Last Name",
+        role: "Role",
+        department: "Department",
+        employment_status: "Employment Status",
+      };
+
+      // Check pending requests for the same entity
+      for (const pendingReq of pendingChangeRequests) {
+        if (
+          pendingReq.change_type === 'PERSONNEL' &&
+          pendingReq.entity_id === editingPersonnel.id &&
+          pendingReq.operation === 'UPDATE' &&
+          pendingReq.current_state &&
+          pendingReq.proposed_changes
+        ) {
+          const pendingChangedFields = getChangedFields(
+            pendingReq.current_state,
+            pendingReq.proposed_changes
+          );
+
+          const conflictingFields = Array.from(fieldsBeingChanged).filter((field) =>
+            pendingChangedFields.has(field)
+          );
+
+          if (conflictingFields.length > 0) {
+            const fieldNames = conflictingFields.map((field) => fieldLabels[field] || field).join(", ");
+            throw new Error(
+              `Cannot submit change request. The following field(s) are already pending in a change request: ${fieldNames}. Please wait for admin approval or rejection before submitting changes to these fields.`
+            );
+          }
+        } else if (
+          pendingReq.change_type === 'PERSONNEL' &&
+          pendingReq.entity_id === editingPersonnel.id &&
+          pendingReq.operation === 'DELETE'
+        ) {
+          throw new Error(
+            "Cannot submit change request. This personnel has a pending delete request. Please wait for admin approval or rejection."
+          );
+        }
+      }
+
       setPendingChangeRequest({
         changeType: 'PERSONNEL',
         operation: 'UPDATE',
         entityId: editingPersonnel.id,
-        currentState: resolvePersonnelFields({
-          first_name: editingPersonnel.first_name,
-          last_name: editingPersonnel.last_name,
-          role: editingPersonnel.role,
-          department: editingPersonnel.department,
-          employment_status: editingPersonnel.employment_status,
-        }),
-        proposedChanges: resolvePersonnelFields(data),
+        currentState,
+        proposedChanges,
       });
       setIsSubmitChangeRequestModalOpen(true);
       setIsAddPersonnelModalOpen(false);
@@ -192,6 +310,20 @@ const PersonnelLayout = () => {
     if (!editingPersonnel) return;
     
     if (user?.role === "Project Staff" && currentProject) {
+      // Check if there's already a pending DELETE request for this personnel
+      const hasPendingDelete = pendingChangeRequests.some(
+        (req) =>
+          req.change_type === 'PERSONNEL' &&
+          req.entity_id === editingPersonnel.id &&
+          req.operation === 'DELETE'
+      );
+
+      if (hasPendingDelete) {
+        throw new Error(
+          "Cannot submit change request. This personnel already has a pending delete request. Please wait for admin approval or rejection."
+        );
+      }
+
       setPendingChangeRequest({
         changeType: 'PERSONNEL',
         operation: 'DELETE',
@@ -251,27 +383,94 @@ const PersonnelLayout = () => {
           const currentPersonnelName = getPersonnelName(editingCompensation.personnel);
           const proposedPersonnelName = getPersonnelName(data.personnel);
           
+          const currentState = {
+            type: editingCompensation.type,
+            budget_item: editingCompensation.budget_item,
+            personnel: editingCompensation.personnel,
+            personnel_name: currentPersonnelName,
+            reason: editingCompensation.reason,
+            amount: editingCompensation.amount,
+            date_effective: editingCompensation.date_effective,
+          };
+          const proposedChanges = {
+            ...payload,
+            personnel_name: proposedPersonnelName,
+          };
+
+          // Check for field-level conflicts with pending requests
+          const fieldsBeingChanged = getChangedFields(currentState, proposedChanges);
+          
+          const fieldLabels: Record<string, string> = {
+            type: "Type",
+            budget_item: "Budget Item",
+            personnel: "Personnel",
+            reason: "Reason",
+            amount: "Amount",
+            date_effective: "Date Effective",
+          };
+
+          // Check pending requests for the same entity
+          for (const pendingReq of pendingChangeRequests) {
+            if (
+              pendingReq.change_type === 'COMPENSATION' &&
+              pendingReq.entity_id === editingCompensation.id &&
+              pendingReq.operation === 'UPDATE' &&
+              pendingReq.current_state &&
+              pendingReq.proposed_changes
+            ) {
+              const pendingChangedFields = getChangedFields(
+                pendingReq.current_state,
+                pendingReq.proposed_changes
+              );
+
+              const conflictingFields = Array.from(fieldsBeingChanged).filter((field) =>
+                pendingChangedFields.has(field)
+              );
+
+              if (conflictingFields.length > 0) {
+                const fieldNames = conflictingFields.map((field) => fieldLabels[field] || field).join(", ");
+                throw new Error(
+                  `Cannot submit change request. The following field(s) are already pending in a change request: ${fieldNames}. Please wait for admin approval or rejection before submitting changes to these fields.`
+                );
+              }
+            } else if (
+              pendingReq.change_type === 'COMPENSATION' &&
+              pendingReq.entity_id === editingCompensation.id &&
+              pendingReq.operation === 'DELETE'
+            ) {
+              throw new Error(
+                "Cannot submit change request. This compensation has a pending delete request. Please wait for admin approval or rejection."
+              );
+            }
+          }
+
           setPendingChangeRequest({
             changeType: 'COMPENSATION',
             operation: 'UPDATE',
             entityId: editingCompensation.id,
-            currentState: {
-              type: editingCompensation.type,
-              budget_item: editingCompensation.budget_item,
-              personnel: editingCompensation.personnel,
-              personnel_name: currentPersonnelName,
-              reason: editingCompensation.reason,
-              amount: editingCompensation.amount,
-              date_effective: editingCompensation.date_effective,
-            },
-            proposedChanges: {
-              ...payload,
-              personnel_name: proposedPersonnelName,
-            },
+            currentState,
+            proposedChanges,
           });
         } else {
           // Create Mode - resolve personnel name
           const proposedPersonnelName = getPersonnelName(data.personnel);
+          
+          // Check if there's already a pending CREATE request for the same personnel and type
+          const hasPendingCreate = pendingChangeRequests.some(
+            (req) =>
+              req.change_type === 'COMPENSATION' &&
+              req.operation === 'CREATE' &&
+              req.status === 'PENDING' &&
+              req.proposed_changes?.personnel === data.personnel &&
+              req.proposed_changes?.type === data.type
+          );
+
+          if (hasPendingCreate) {
+            const typeLabel = data.type === 'SALARY' ? 'Salary' : 'Honoraria';
+            throw new Error(
+              `Cannot submit change request. There is already a pending ${typeLabel} compensation request for this personnel. Please wait for admin approval or rejection before submitting another request.`
+            );
+          }
           
           setPendingChangeRequest({
             changeType: 'COMPENSATION',

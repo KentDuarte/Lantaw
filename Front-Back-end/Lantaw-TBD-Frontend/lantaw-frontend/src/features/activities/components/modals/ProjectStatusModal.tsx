@@ -25,6 +25,7 @@ interface ProjectStatusModalProps {
   projectStatus: Project["project_status"];
   onStatusChange: (status: Project["project_status"]) => void;
   onUpdate: () => void;
+  error?: string | null;
 }
 
 export const ProjectStatusModal: React.FC<ProjectStatusModalProps> = ({
@@ -33,6 +34,7 @@ export const ProjectStatusModal: React.FC<ProjectStatusModalProps> = ({
   projectStatus,
   onStatusChange,
   onUpdate,
+  error,
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -71,6 +73,11 @@ export const ProjectStatusModal: React.FC<ProjectStatusModalProps> = ({
               </SelectContent>
             </Select>
           </div>
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>

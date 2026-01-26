@@ -51,6 +51,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
     activity_budget_item: null as number | null,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Reset form when modal opens/closes or activity changes
   useEffect(() => {
@@ -72,6 +73,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
           activity_budget_item: null,
         });
       }
+      setError(null);
     }
   }, [isOpen, activity]);
 
@@ -79,6 +81,7 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
     if (!formData.title.trim()) return;
 
     setIsSubmitting(true);
+    setError(null);
     try {
       await onSubmit({
         title: formData.title,
@@ -88,8 +91,9 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
         activity_budget_item: formData.activity_budget_item,
       });
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save activity:", error);
+      setError(error?.message || "Failed to save activity. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -107,6 +111,11 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
             {activity ? "Edit Activity" : "Add New Activity"}
           </DialogTitle>
         </DialogHeader>
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+            <p className="text-sm text-destructive">{error}</p>
+          </div>
+        )}
         <div className="space-y-4">
           <div>
             <Label htmlFor="activity-title" className="mb-2">

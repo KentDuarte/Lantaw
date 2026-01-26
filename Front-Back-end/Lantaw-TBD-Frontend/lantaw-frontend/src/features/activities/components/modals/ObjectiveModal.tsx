@@ -33,6 +33,7 @@ export const ObjectiveModal: React.FC<ObjectiveModalProps> = ({
     description: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Reset form when modal opens/closes or objective changes
   useEffect(() => {
@@ -45,6 +46,7 @@ export const ObjectiveModal: React.FC<ObjectiveModalProps> = ({
       } else {
         setFormData({ title: "", description: "" });
       }
+      setError(null);
     }
   }, [isOpen, objective]);
 
@@ -52,11 +54,13 @@ export const ObjectiveModal: React.FC<ObjectiveModalProps> = ({
     if (!formData.title.trim()) return;
 
     setIsSubmitting(true);
+    setError(null);
     try {
       await onSubmit(formData);
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save objective:", error);
+      setError(error?.message || "Failed to save objective. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -75,6 +79,11 @@ export const ObjectiveModal: React.FC<ObjectiveModalProps> = ({
               : "Fill in the details to add a new objective to this project."}
           </DialogDescription>
         </DialogHeader>
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+            <p className="text-sm text-destructive">{error}</p>
+          </div>
+        )}
         <div className="space-y-4">
           <div>
             <Label htmlFor="objective-title" className="mb-2">

@@ -86,7 +86,7 @@ const DashboardLayout = () => {
   // Hooks
   const { objectives } = useActivities(currentProject?.id);
   const activities = useActivities(currentProject?.id || null);
-  const { createChangeRequest } = useChangeRequests(currentProject?.id);
+  const { createChangeRequest, changeRequests } = useChangeRequests(currentProject?.id);
 
   // State
   const [budgetView, setBudgetView] = useState<BudgetViewType>("OVERVIEW");
@@ -286,9 +286,77 @@ const DashboardLayout = () => {
     }
   };
 
+  // Helper function to get changed fields from currentState and proposedChanges
+  const getChangedFields = (
+    currentState: Record<string, any>,
+    proposedChanges: Record<string, any>
+  ): Set<string> => {
+    const changedFields = new Set<string>();
+
+    Object.keys(proposedChanges).forEach((key) => {
+      const currentValue = currentState[key];
+      const proposedValue = proposedChanges[key];
+
+      // Special handling for grant_amount (decimal field)
+      if (key === 'grant_amount') {
+        const currentNum = (currentValue === null || currentValue === undefined || currentValue === '')
+          ? 0
+          : (typeof currentValue === 'number' ? currentValue : parseFloat(String(currentValue)) || 0);
+        const proposedNum = (proposedValue === null || proposedValue === undefined || proposedValue === '')
+          ? 0
+          : (typeof proposedValue === 'number' ? proposedValue : parseFloat(String(proposedValue)) || 0);
+        if (!isNaN(currentNum) && !isNaN(proposedNum) && Math.abs(currentNum - proposedNum) > 0.01) {
+          changedFields.add(key);
+        }
+        return;
+      }
+
+      // Normalize values for comparison
+      const normalizeValue = (val: any) => {
+        if (val === null || val === undefined) return "";
+        if (typeof val === "number") return val;
+        const numVal = Number(val);
+        if (!isNaN(numVal) && val !== "" && String(numVal) === String(val).trim()) {
+          return numVal;
+        }
+        return String(val).trim();
+      };
+
+      const normalizedCurrent = normalizeValue(currentValue);
+      const normalizedProposed = normalizeValue(proposedValue);
+
+      if (normalizedCurrent !== normalizedProposed) {
+        changedFields.add(key);
+      }
+    });
+
+    return changedFields;
+  };
+
+  // Get pending PROJECT change requests for the current project
+  const pendingProjectChangeRequests = useMemo(() => {
+    if (!currentProject?.id || user?.role !== "Project Staff") {
+      return [];
+    }
+    return changeRequests.filter(
+      (req) =>
+        req.project === currentProject.id &&
+        req.change_type === "PROJECT" &&
+        req.status === "PENDING"
+    );
+  }, [changeRequests, currentProject?.id, user?.role]);
+
   // Handlers for editing project
   const handleOpenEditProjectModal = () => {
+    setEditProjectError("");
     setIsEditProjectModalOpen(true);
+  };
+
+  const handleCloseEditProjectModal = (open: boolean) => {
+    if (!open) {
+      setEditProjectError("");
+    }
+    setIsEditProjectModalOpen(open);
   };
 
   const handleEditProject = async () => {
@@ -326,6 +394,41 @@ const DashboardLayout = () => {
         date_end: editFormData.endDate,
         grant_amount: parseFloat(editFormData.totalGrant) || 0,
       };
+
+      // Get fields that are being changed in this edit
+      const fieldsBeingChanged = getChangedFields(currentState, proposedChanges);
+
+      // Check if any of the fields being changed are already in a pending change request
+      const fieldLabels: Record<string, string> = {
+        name: "Project Name",
+        project_leader: "Project Leader",
+        description: "Description",
+        date_start: "Start Date",
+        date_end: "End Date",
+        grant_amount: "Grant Amount",
+      };
+
+      for (const pendingReq of pendingProjectChangeRequests) {
+        if (pendingReq.current_state && pendingReq.proposed_changes) {
+          const pendingChangedFields = getChangedFields(
+            pendingReq.current_state,
+            pendingReq.proposed_changes
+          );
+
+          // Check for overlap
+          const conflictingFields = Array.from(fieldsBeingChanged).filter((field) =>
+            pendingChangedFields.has(field)
+          );
+
+          if (conflictingFields.length > 0) {
+            const fieldNames = conflictingFields.map((field) => fieldLabels[field] || field).join(", ");
+            setEditProjectError(
+              `Cannot submit change request. The following field(s) are already pending in a change request: ${fieldNames}. Please wait for admin approval or rejection before submitting changes to these fields.`
+            );
+            return;
+          }
+        }
+      }
 
       // Generate dynamic title based on changed fields
       const customTitle = generateChangeRequestTitle(currentState, proposedChanges);
@@ -494,12 +597,13 @@ const DashboardLayout = () => {
       {/* Edit Project Modal */}
       <ProjectModal
         open={isEditProjectModalOpen}
-        onOpenChange={setIsEditProjectModalOpen}
+        onOpenChange={handleCloseEditProjectModal}
         isEdit={true}
         formData={editFormData}
         setFormData={setEditFormData}
         onSubmit={handleEditProject}
         userRole={user?.role}
+        error={editProjectError}
       />
 
       {/* Submit Change Request Modal */}

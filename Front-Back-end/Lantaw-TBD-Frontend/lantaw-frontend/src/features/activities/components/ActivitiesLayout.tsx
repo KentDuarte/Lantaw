@@ -10,6 +10,7 @@ import { useAuth } from "../../../context/AuthContext";
 // Hooks
 import { useActivities } from "../hooks/useActivities";
 import { useActivityFilters } from "../hooks/useActivityFilters";
+import { useChangeRequests } from "../../change-requests/hooks/useChangeRequests";
 
 // Components
 import { ActivitiesHeader } from "./ActivitiesHeader";
@@ -38,6 +39,7 @@ const ActivitiesLayout = () => {
   const { user } = useAuth();
   const activities = useActivities(currentProject?.id || null);
   const filters = useActivityFilters();
+  const { changeRequests } = useChangeRequests(currentProject?.id);
   
   // Helper to check if financial values should be hidden
   const hideFinancialValues = user?.role === "Executive";
@@ -46,6 +48,7 @@ const ActivitiesLayout = () => {
   const [projectStatus, setProjectStatus] = useState<
     "ACTIVE" | "COMPLETED" | "ONHOLD"
   >(currentProject?.project_status || "ACTIVE");
+  const [projectStatusError, setProjectStatusError] = useState<string | null>(null);
 
   // Modal states
   const [isObjectiveModalOpen, setIsObjectiveModalOpen] = useState(false);
@@ -86,6 +89,86 @@ const ActivitiesLayout = () => {
       setProjectStatus(currentProject.project_status);
     }
   }, [currentProject]);
+
+  // Helper function to get changed fields from currentState and proposedChanges
+  const getChangedFields = (
+    currentState: Record<string, any> | null,
+    proposedChanges: Record<string, any>
+  ): Set<string> => {
+    const changedFields = new Set<string>();
+    
+    if (!currentState) return changedFields;
+
+    Object.keys(proposedChanges).forEach((key) => {
+      // Skip internal fields
+      if (key === 'id' || key === 'objective' || key === 'project') {
+        return;
+      }
+
+      const currentValue = currentState[key];
+      const proposedValue = proposedChanges[key];
+
+      // Special handling for numeric fields (expenses, amounts)
+      if (key.includes('expense') || key.includes('amount')) {
+        const currentNum = (currentValue === null || currentValue === undefined || currentValue === '')
+          ? 0
+          : (typeof currentValue === 'number' ? currentValue : parseFloat(String(currentValue)) || 0);
+        const proposedNum = (proposedValue === null || proposedValue === undefined || proposedValue === '')
+          ? 0
+          : (typeof proposedValue === 'number' ? proposedValue : parseFloat(String(proposedValue)) || 0);
+        if (!isNaN(currentNum) && !isNaN(proposedNum) && Math.abs(currentNum - proposedNum) > 0.01) {
+          changedFields.add(key);
+        }
+        return;
+      }
+
+      // Normalize values for comparison
+      const normalizeValue = (val: any) => {
+        if (val === null || val === undefined) return "";
+        if (typeof val === "number") return val;
+        const numVal = Number(val);
+        if (!isNaN(numVal) && val !== "" && String(numVal) === String(val).trim()) {
+          return numVal;
+        }
+        return String(val).trim();
+      };
+
+      const normalizedCurrent = normalizeValue(currentValue);
+      const normalizedProposed = normalizeValue(proposedValue);
+
+      if (normalizedCurrent !== normalizedProposed) {
+        changedFields.add(key);
+      }
+    });
+
+    return changedFields;
+  };
+
+  // Get pending change requests for the current project
+  const pendingChangeRequests = useMemo(() => {
+    if (!currentProject?.id || user?.role !== "Project Staff") {
+      return [];
+    }
+    return changeRequests.filter(
+      (req) =>
+        req.project === currentProject.id &&
+        (req.change_type === "OBJECTIVE" || req.change_type === "ACTIVITY") &&
+        req.status === "PENDING"
+    );
+  }, [changeRequests, currentProject?.id, user?.role]);
+
+  // Get pending PROJECT change requests for the current project
+  const pendingProjectChangeRequests = useMemo(() => {
+    if (!currentProject?.id || user?.role !== "Project Staff") {
+      return [];
+    }
+    return changeRequests.filter(
+      (req) =>
+        req.project === currentProject.id &&
+        req.change_type === "PROJECT" &&
+        req.status === "PENDING"
+    );
+  }, [changeRequests, currentProject?.id, user?.role]);
 
   // Handlers
   const handleOpenAddObjectiveModal = () => {
@@ -165,16 +248,62 @@ const ActivitiesLayout = () => {
     if (!editingObjective) return;
     
     if (user?.role === "Project Staff" && currentProject) {
+      const currentState = {
+        title: editingObjective.title,
+        description: editingObjective.description,
+      };
+      const proposedChanges = data;
+
+      // Check for field-level conflicts with pending requests
+      const fieldsBeingChanged = getChangedFields(currentState, proposedChanges);
+      
+      const fieldLabels: Record<string, string> = {
+        title: "Title",
+        description: "Description",
+      };
+
+      // Check pending requests for the same entity
+      for (const pendingReq of pendingChangeRequests) {
+        if (
+          pendingReq.change_type === 'OBJECTIVE' &&
+          pendingReq.entity_id === editingObjective.id &&
+          pendingReq.operation === 'UPDATE' &&
+          pendingReq.current_state &&
+          pendingReq.proposed_changes
+        ) {
+          const pendingChangedFields = getChangedFields(
+            pendingReq.current_state,
+            pendingReq.proposed_changes
+          );
+
+          const conflictingFields = Array.from(fieldsBeingChanged).filter((field) =>
+            pendingChangedFields.has(field)
+          );
+
+          if (conflictingFields.length > 0) {
+            const fieldNames = conflictingFields.map((field) => fieldLabels[field] || field).join(", ");
+            throw new Error(
+              `Cannot submit change request. The following field(s) are already pending in a change request: ${fieldNames}. Please wait for admin approval or rejection before submitting changes to these fields.`
+            );
+          }
+        } else if (
+          pendingReq.change_type === 'OBJECTIVE' &&
+          pendingReq.entity_id === editingObjective.id &&
+          pendingReq.operation === 'DELETE'
+        ) {
+          throw new Error(
+            "Cannot submit change request. This objective has a pending delete request. Please wait for admin approval or rejection."
+          );
+        }
+      }
+
       // Show change request modal for Project Staff
       setPendingChangeRequest({
         changeType: 'OBJECTIVE',
         operation: 'UPDATE',
         entityId: editingObjective.id,
-        currentState: {
-          title: editingObjective.title,
-          description: editingObjective.description,
-        },
-        proposedChanges: data,
+        currentState,
+        proposedChanges,
       });
       setIsSubmitChangeRequestModalOpen(true);
       setIsObjectiveModalOpen(false);
@@ -188,6 +317,20 @@ const ActivitiesLayout = () => {
     if (!editingObjective) return;
     
     if (user?.role === "Project Staff" && currentProject) {
+      // Check if there's already a pending DELETE request for this objective
+      const hasPendingDelete = pendingChangeRequests.some(
+        (req) =>
+          req.change_type === 'OBJECTIVE' &&
+          req.entity_id === editingObjective.id &&
+          req.operation === 'DELETE'
+      );
+
+      if (hasPendingDelete) {
+        throw new Error(
+          "Cannot submit change request. This objective already has a pending delete request. Please wait for admin approval or rejection."
+        );
+      }
+
       // Show change request modal for Project Staff
       setPendingChangeRequest({
         changeType: 'OBJECTIVE',
@@ -248,19 +391,68 @@ const ActivitiesLayout = () => {
     if (!editingObjective || !editingActivity) return;
     
     if (user?.role === "Project Staff" && currentProject) {
+      const currentState = {
+        title: editingActivity.title,
+        activity_status: editingActivity.activity_status,
+        projected_expense: editingActivity.projected_expense,
+        actual_expense: editingActivity.actual_expense,
+        activity_budget_item: editingActivity.activity_budget_item,
+      };
+      const proposedChanges = data;
+
+      // Check for field-level conflicts with pending requests
+      const fieldsBeingChanged = getChangedFields(currentState, proposedChanges);
+      
+      const fieldLabels: Record<string, string> = {
+        title: "Title",
+        activity_status: "Activity Status",
+        projected_expense: "Projected Expense",
+        actual_expense: "Actual Expense",
+        activity_budget_item: "Budget Item",
+      };
+
+      // Check pending requests for the same entity
+      for (const pendingReq of pendingChangeRequests) {
+        if (
+          pendingReq.change_type === 'ACTIVITY' &&
+          pendingReq.entity_id === editingActivity.id &&
+          pendingReq.operation === 'UPDATE' &&
+          pendingReq.current_state &&
+          pendingReq.proposed_changes
+        ) {
+          const pendingChangedFields = getChangedFields(
+            pendingReq.current_state,
+            pendingReq.proposed_changes
+          );
+
+          const conflictingFields = Array.from(fieldsBeingChanged).filter((field) =>
+            pendingChangedFields.has(field)
+          );
+
+          if (conflictingFields.length > 0) {
+            const fieldNames = conflictingFields.map((field) => fieldLabels[field] || field).join(", ");
+            throw new Error(
+              `Cannot submit change request. The following field(s) are already pending in a change request: ${fieldNames}. Please wait for admin approval or rejection before submitting changes to these fields.`
+            );
+          }
+        } else if (
+          pendingReq.change_type === 'ACTIVITY' &&
+          pendingReq.entity_id === editingActivity.id &&
+          pendingReq.operation === 'DELETE'
+        ) {
+          throw new Error(
+            "Cannot submit change request. This activity has a pending delete request. Please wait for admin approval or rejection."
+          );
+        }
+      }
+
       // Show change request modal for Project Staff
       setPendingChangeRequest({
         changeType: 'ACTIVITY',
         operation: 'UPDATE',
         entityId: editingActivity.id,
-        currentState: {
-          title: editingActivity.title,
-          activity_status: editingActivity.activity_status,
-          projected_expense: editingActivity.projected_expense,
-          actual_expense: editingActivity.actual_expense,
-          activity_budget_item: editingActivity.activity_budget_item,
-        },
-        proposedChanges: data,
+        currentState,
+        proposedChanges,
       });
       setIsSubmitChangeRequestModalOpen(true);
       setIsActivityModalOpen(false);
@@ -279,6 +471,20 @@ const ActivitiesLayout = () => {
     if (!editingObjective || !editingActivity) return;
     
     if (user?.role === "Project Staff" && currentProject) {
+      // Check if there's already a pending DELETE request for this activity
+      const hasPendingDelete = pendingChangeRequests.some(
+        (req) =>
+          req.change_type === 'ACTIVITY' &&
+          req.entity_id === editingActivity.id &&
+          req.operation === 'DELETE'
+      );
+
+      if (hasPendingDelete) {
+        throw new Error(
+          "Cannot submit change request. This activity already has a pending delete request. Please wait for admin approval or rejection."
+        );
+      }
+
       // Show change request modal for Project Staff
       setPendingChangeRequest({
         changeType: 'ACTIVITY',
@@ -353,18 +559,71 @@ const ActivitiesLayout = () => {
       return;
     }
 
+    // Clear previous error
+    setProjectStatusError(null);
+
     if (user?.role === "Project Staff") {
+      // Check if status is actually changing
+      if (currentProject.project_status === projectStatus) {
+        setProjectStatusError(
+          "No changes detected. The project status is already set to the selected status."
+        );
+        return;
+      }
+
+      const currentState = {
+        project_status: currentProject.project_status,
+      };
+      const proposedChanges = {
+        project_status: projectStatus,
+      };
+
+      // Check for field-level conflicts with pending PROJECT change requests
+      const fieldsBeingChanged = getChangedFields(currentState, proposedChanges);
+
+      // Check if there's any pending request that includes project_status field
+      for (const pendingReq of pendingProjectChangeRequests) {
+        if (
+          pendingReq.entity_id === currentProject.id &&
+          pendingReq.operation === 'UPDATE' &&
+          pendingReq.current_state &&
+          pendingReq.proposed_changes
+        ) {
+          // Check if the pending request includes project_status field
+          const pendingChangedFields = getChangedFields(
+            pendingReq.current_state,
+            pendingReq.proposed_changes
+          );
+
+          // If pending request has project_status field, block the new request
+          if (pendingChangedFields.has('project_status')) {
+            setProjectStatusError(
+              "Cannot submit change request. Project Status is already pending in a change request. Please wait for admin approval or rejection before submitting changes to this field."
+            );
+            return;
+          }
+
+          // Also check for field conflicts
+          const conflictingFields = Array.from(fieldsBeingChanged).filter((field) =>
+            pendingChangedFields.has(field)
+          );
+
+          if (conflictingFields.length > 0) {
+            setProjectStatusError(
+              "Cannot submit change request. Project Status is already pending in a change request. Please wait for admin approval or rejection before submitting changes to this field."
+            );
+            return;
+          }
+        }
+      }
+
       // Show change request modal for Project Staff
       setPendingChangeRequest({
         changeType: 'PROJECT',
         operation: 'UPDATE',
         entityId: currentProject.id,
-        currentState: {
-          project_status: currentProject.project_status,
-        },
-        proposedChanges: {
-          project_status: projectStatus,
-        },
+        currentState,
+        proposedChanges,
       });
       setIsSubmitChangeRequestModalOpen(true);
       setIsProjectStatusModalOpen(false);
@@ -543,12 +802,17 @@ const ActivitiesLayout = () => {
       {/* Modals */}
       <ProjectStatusModal
         isOpen={isProjectStatusModalOpen}
-        onClose={() => setIsProjectStatusModalOpen(false)}
+        onClose={() => {
+          setIsProjectStatusModalOpen(false);
+          setProjectStatusError(null);
+        }}
         projectStatus={projectStatus}
-        onStatusChange={(status) =>
-          setProjectStatus(status as "ACTIVE" | "COMPLETED" | "ONHOLD")
-        }
+        onStatusChange={(status) => {
+          setProjectStatus(status as "ACTIVE" | "COMPLETED" | "ONHOLD");
+          setProjectStatusError(null); // Clear error when status changes
+        }}
         onUpdate={handleProjectStatusUpdate}
+        error={projectStatusError}
       />
 
       <ObjectiveModal

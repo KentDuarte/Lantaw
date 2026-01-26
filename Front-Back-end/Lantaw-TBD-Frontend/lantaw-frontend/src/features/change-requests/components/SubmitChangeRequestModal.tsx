@@ -71,8 +71,18 @@ export const SubmitChangeRequestModal: React.FC<SubmitChangeRequestModalProps> =
       });
       setDescription("");
       onOpenChange(false);
+      // Auto-refresh the page after successful submission
+      window.location.reload();
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || "Failed to submit change request");
+      // Handle different error response formats
+      const errorData = err.response?.data;
+      const errorMessage = 
+        errorData?.error || 
+        (Array.isArray(errorData?.non_field_errors) ? errorData.non_field_errors[0] : errorData?.non_field_errors) ||
+        errorData?.detail ||
+        err.message || 
+        "Failed to submit change request";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

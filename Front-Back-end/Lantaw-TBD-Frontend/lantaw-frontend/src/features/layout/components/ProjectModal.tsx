@@ -31,6 +31,7 @@ interface ProjectModalProps {
   onSubmit: () => void;
   checkStaffExists?: (email: string) => Promise<boolean>;
   userRole?: string;
+  error?: string;
 }
 
 type FormErrors = Partial<Record<keyof ProjectFormData, string>>;
@@ -46,6 +47,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
   onSubmit,
   checkStaffExists,
   userRole,
+  error,
 }) => {
   const hideFinancialValues = userRole === "Executive";
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -208,6 +210,12 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
               : "Fill in the details to create a new project."}
           </DialogDescription>
         </DialogHeader>
+
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+            <p className="text-sm text-destructive">{error}</p>
+          </div>
+        )}
 
         <div className="space-y-3 overflow-y-auto flex-1 min-h-0 pr-1">
           {/* Project Leader and Project Name */}
