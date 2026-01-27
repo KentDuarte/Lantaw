@@ -156,6 +156,27 @@ export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProp
       return null;
     }
 
+    // Check if this is an expense addition (ACTIVITY UPDATE where only actual_expense increased)
+    const isExpenseAddition = change_type === 'ACTIVITY' && 
+                               operation === 'UPDATE' &&
+                               current_state &&
+                               proposed_changes &&
+                               changedFields?.has('actual_expense') &&
+                               Object.keys(proposed_changes).every(key => 
+                                 key === 'actual_expense' || 
+                                 proposed_changes[key] === current_state[key]
+                               );
+    
+    // Calculate additional expense if it's an expense addition (only for proposed changes)
+    let additionalExpense: number | null = null;
+    if (isExpenseAddition && variant === "proposed") {
+      const currentExpense = Number(current_state.actual_expense || 0);
+      const proposedExpense = Number(fields.actual_expense || 0);
+      if (proposedExpense > currentExpense) {
+        additionalExpense = proposedExpense - currentExpense;
+      }
+    }
+
     // Define field order for personnel (if it's a personnel change request)
     const personnelFieldOrder = [
       "first_name",
@@ -175,6 +196,7 @@ export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProp
       activity_budget_item: "Budget Category",
       projected_expense: "Projected Expense",
       actual_expense: "Actual Expense",
+      additional_expense: "Additional Expense",
       objective: "Objective",
       
       // Personnel fields
@@ -231,7 +253,19 @@ export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProp
               return 0;
             });
 
-            return sortedEntries.map(([key, value]) => {
+            // Add additional expense field if it's an expense addition
+            const entriesToRender = [...sortedEntries];
+            if (isExpenseAddition && variant === "proposed" && additionalExpense !== null) {
+              // Insert additional_expense before actual_expense
+              const actualExpenseIndex = entriesToRender.findIndex(([key]) => key === 'actual_expense');
+              if (actualExpenseIndex !== -1) {
+                entriesToRender.splice(actualExpenseIndex, 0, ['additional_expense', additionalExpense.toString()]);
+              } else {
+                entriesToRender.push(['additional_expense', additionalExpense.toString()]);
+              }
+            }
+
+            return entriesToRender.map(([key, value]) => {
               // Skip internal IDs unless it's a reference field
               if (key === "id" || key === "project" || key === "project_id") {
                 return null;
@@ -277,6 +311,24 @@ export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProp
               }
 
               const label = fieldLabels[key] || key.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+              
+              // Special handling for additional_expense field (highlight it)
+              if (key === "additional_expense" && isExpenseAddition) {
+                const isChanged = true; // Always highlight additional expense
+                return (
+                  <div 
+                    key={key}
+                    className="bg-blue-100 border-2 border-blue-400 rounded-md p-2 -m-1"
+                  >
+                    <Label className="text-xs text-blue-900 font-semibold">
+                      {label}
+                    </Label>
+                    <div className="text-sm font-medium mt-1 text-blue-900">
+                      {renderFieldValue(key, value)}
+                    </div>
+                  </div>
+                );
+              }
               
               // Special handling for personnel_name field in compensation (prefer name over ID)
               if (key === "personnel_name" && change_type === 'COMPENSATION') {

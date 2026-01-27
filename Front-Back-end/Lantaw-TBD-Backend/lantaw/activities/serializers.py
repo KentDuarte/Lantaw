@@ -4,8 +4,12 @@ from budget.models import BudgetLineItem
 from projects.models import Project 
 
 class ActivitySerializer(serializers.ModelSerializer):
-    # Write: accept IDs
-    activity_budget_item = serializers.PrimaryKeyRelatedField(queryset=BudgetLineItem.objects.all())
+    # Write: accept IDs (allow null since model allows it)
+    activity_budget_item = serializers.PrimaryKeyRelatedField(
+        queryset=BudgetLineItem.objects.all(),
+        allow_null=True,
+        required=False
+    )
     
     # Read: show name of budget item too (without breaking POST)
     budget_item_name = serializers.CharField(source="activity_budget_item.name", read_only=True)

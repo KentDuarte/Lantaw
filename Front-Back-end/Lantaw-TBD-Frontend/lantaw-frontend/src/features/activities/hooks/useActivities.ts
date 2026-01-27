@@ -311,7 +311,7 @@ export const useActivities = (projectId: number | null): UseActivitiesReturn => 
         {
           title: currentActivity.title,
           activity_status: currentActivity.activity_status,
-          activity_budget_item: currentActivity.activity_budget_item,
+          activity_budget_item: currentActivity.activity_budget_item ?? null,
           projected_expense: currentActivity.projected_expense,
           actual_expense: newTotalExpense.toString(),
         }
