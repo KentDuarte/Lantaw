@@ -74,6 +74,12 @@ class CompensationViewSet(viewsets.ModelViewSet):
     serializer_class = CompensationSerializer
     permission_classes = [IsAdminExecutiveOrProjectStaff]
 
+    def get_serializer_context(self):
+        """Add project_pk to serializer context."""
+        context = super().get_serializer_context()
+        context['project_pk'] = self.kwargs.get('project_pk')
+        return context
+
     def perform_create(self, serializer):
         user = self.request.user
         project_id = self.kwargs.get("project_pk")

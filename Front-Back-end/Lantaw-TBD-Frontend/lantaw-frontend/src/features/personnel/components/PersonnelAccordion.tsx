@@ -190,7 +190,7 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
                       <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
                         Total: {hideFinancialValues ? "---" : formatCurrency(getTotal(salary))}
                       </span>
-                      {showActions && onAddSalary && (
+                      {showActions && onAddSalary && salary.length === 0 && (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -239,7 +239,7 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
                       <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">
                         Total: {hideFinancialValues ? "---" : formatCurrency(getTotal(honorariaItems))}
                       </span>
-                      {showActions && (
+                      {showActions && honorariaItems.length === 0 && (
                         <Button
                           size="sm"
                           variant="ghost"

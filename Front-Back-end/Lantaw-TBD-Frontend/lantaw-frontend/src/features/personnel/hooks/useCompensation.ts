@@ -78,10 +78,16 @@ export const useCompensation = (projectId: number): UseCompensationReturn => {
                 const newCompensation = await compensationApi.create(projectId, data);
                 setCompensation((prev) => [...prev, newCompensation]);
                 return newCompensation;
-            } catch (err) {
-                const error = err instanceof Error ? err : new Error("Failed to add compensation item");
+            } catch (err: any) {
+                console.error("Failed to add compensation item:", err);
+                console.error("Error response:", err?.response?.data);
+                const errorMessage = err?.response?.data 
+                    ? (typeof err.response.data === 'string' 
+                        ? err.response.data 
+                        : JSON.stringify(err.response.data))
+                    : err?.message || "Failed to add compensation item";
+                const error = new Error(errorMessage);
                 setError(error);
-                console.error("Failed to add compensation item:", error);
                 throw error;
             }
         }, [projectId]);

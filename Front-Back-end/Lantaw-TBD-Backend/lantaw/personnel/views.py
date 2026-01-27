@@ -12,7 +12,7 @@ class IsAdminExecutiveOrProjectStaff(permissions.BasePermission):
     """
     Admin: Full access
     Executive: Read-only
-    Project Staff: Only personnel in their projects
+    Project Staff: Can create/update/delete personnel, roles, and departments in their projects
     """
 
     def has_permission(self, request, view):
@@ -23,9 +23,9 @@ class IsAdminExecutiveOrProjectStaff(permissions.BasePermission):
 
         if user.role == "ADMIN":
             return True
-        # Project Staff: Read-only access (must use Change Requests for edits)
+        # Project Staff: Can perform all operations (project membership checked in perform_create)
         if user.role == "PROJECT_STAFF":
-            return request.method in permissions.SAFE_METHODS
+            return True
         if user.role == "EXECUTIVE":
             return request.method in permissions.SAFE_METHODS
         return False
@@ -39,10 +39,26 @@ class IsAdminExecutiveOrProjectStaff(permissions.BasePermission):
             return request.method in permissions.SAFE_METHODS
         # Project Staff: only if part of the same project
         if user.role == "PROJECT_STAFF":
-            return ProjectMembers.objects.filter(
-                project=obj.project,
-                user=user
-            ).exists()
+            # Get project_id from URL kwargs
+            project_id = view.kwargs.get("project_pk")
+            if project_id:
+                # Check if user is a member of the project
+                return ProjectMembers.objects.filter(
+                    project_id=project_id,
+                    user=user
+                ).exists()
+            # For objects with direct project field (Role, Department)
+            if hasattr(obj, 'project') and obj.project:
+                return ProjectMembers.objects.filter(
+                    project=obj.project,
+                    user=user
+                ).exists()
+            # For Personnel objects (linked through ProjectPersonnel)
+            if isinstance(obj, Personnel):
+                return ProjectPersonnel.objects.filter(
+                    personnel=obj,
+                    project__projectmembers__user=user
+                ).exists()
         return False
 
 class ProjectPermissionMixin:
@@ -142,6 +158,7 @@ class PersonnelViewSet(viewsets.ModelViewSet):
         """
         Create Personnel record and ProjectPersonnel relationship.
         Also validates that role and department belong to the current project.
+        Checks if user has permission to create in this project.
         """
         project_id = self.kwargs.get("project_pk")
         if not project_id:
@@ -157,6 +174,12 @@ class PersonnelViewSet(viewsets.ModelViewSet):
             project = Project.objects.get(pk=project_id)
         except Project.DoesNotExist:
             raise ValidationError({'project': 'Project not found.'})
+        
+        # Check if user has permission to create in this project
+        user = self.request.user
+        if user.role == "PROJECT_STAFF":
+            if not ProjectMembers.objects.filter(project_id=project_id, user=user).exists():
+                raise PermissionDenied("You are not allowed to create personnel for this project.")
         
         # Validate role and department belong to this project
         # Extract IDs - handle both integer IDs and object instances

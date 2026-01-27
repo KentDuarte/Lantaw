@@ -49,6 +49,7 @@ const ActivitiesLayout = () => {
     "ACTIVE" | "COMPLETED" | "ONHOLD"
   >(currentProject?.project_status || "ACTIVE");
   const [projectStatusError, setProjectStatusError] = useState<string | null>(null);
+  const [isUpdatingProjectStatus, setIsUpdatingProjectStatus] = useState(false);
 
   // Modal states
   const [isObjectiveModalOpen, setIsObjectiveModalOpen] = useState(false);
@@ -629,15 +630,25 @@ const ActivitiesLayout = () => {
       setIsProjectStatusModalOpen(false);
     } else {
       // Admin can update directly
+      setIsUpdatingProjectStatus(true);
+      setProjectStatusError(null);
       try {
         const updatedProject = await projectsApi.updateStatus(
           currentProject.id,
           projectStatus
         );
         setCurrentProject(updatedProject);
+        setProjectStatusError(null);
         setIsProjectStatusModalOpen(false);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to update project status:", error);
+        setProjectStatusError(
+          error?.response?.data?.detail || 
+          error?.message || 
+          "Failed to update project status. Please try again."
+        );
+      } finally {
+        setIsUpdatingProjectStatus(false);
       }
     }
   };
@@ -803,8 +814,10 @@ const ActivitiesLayout = () => {
       <ProjectStatusModal
         isOpen={isProjectStatusModalOpen}
         onClose={() => {
-          setIsProjectStatusModalOpen(false);
-          setProjectStatusError(null);
+          if (!isUpdatingProjectStatus) {
+            setIsProjectStatusModalOpen(false);
+            setProjectStatusError(null);
+          }
         }}
         projectStatus={projectStatus}
         onStatusChange={(status) => {
@@ -813,6 +826,7 @@ const ActivitiesLayout = () => {
         }}
         onUpdate={handleProjectStatusUpdate}
         error={projectStatusError}
+        isLoading={isUpdatingProjectStatus}
       />
 
       <ObjectiveModal

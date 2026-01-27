@@ -123,7 +123,29 @@ export const EditCompensationModal: React.FC<EditCompensationModalProps> = ({
       onClose();
     } catch (error: any) {
       console.error("Failed to save compensation item:", error);
-      setError(error?.message || "Failed to save compensation. Please try again.");
+      console.error("Error details:", error?.response?.data);
+      
+      // Extract error message from response
+      let errorMessage = "Failed to save compensation. Please try again.";
+      if (error?.response?.data) {
+        const errorData = error.response.data;
+        if (errorData.non_field_errors && Array.isArray(errorData.non_field_errors)) {
+          // Handle unique constraint error
+          if (errorData.non_field_errors[0]?.includes("unique")) {
+            errorMessage = `A ${formData.type === 'SALARY' ? 'Salary' : 'Honoraria'} compensation already exists for this personnel. Please edit the existing compensation instead.`;
+          } else {
+            errorMessage = errorData.non_field_errors[0];
+          }
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        }
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
       // Don't close modal on error - let user see the error and try again
     } finally {
       setIsSubmitting(false);

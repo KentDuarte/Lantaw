@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, X, Check } from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -8,7 +8,6 @@ import {
   SelectValue,
 } from "../../../../components/common/select";
 import { Input } from "../../../../components/common/input";
-import { Button } from "../../../../components/common/button";
 import { Label } from "../../../../components/common/label";
 
 // Generic shape for Role and Department
@@ -61,40 +60,41 @@ export function CreatableSelect({
     }
   };
 
+  // Handle Enter key press
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && inputValue.trim() && !isCreating) {
+      e.preventDefault();
+      handleCreate();
+    } else if (e.key === "Escape") {
+      setIsAddingNew(false);
+      setInputValue("");
+    }
+  };
+
+  // Handle blur - auto-create if there's input
+  const handleBlur = () => {
+    if (inputValue.trim() && !isCreating) {
+      handleCreate();
+    } else {
+      setIsAddingNew(false);
+      setInputValue("");
+    }
+  };
+
   // Adding New
   if (isAddingNew) {
     return (
       <div className="space-y-2">
         <Label className="mb-2">{label}</Label>
-        <div className="flex gap-2">
-          <Input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder={`Enter new ${label.toLowerCase()}...`}
-            disabled={isCreating}
-            autoFocus
-          />
-          <Button
-            size="icon"
-            onClick={handleCreate}
-            disabled={!inputValue.trim() || isCreating}
-            type="button" // Prevent form submission
-          >
-            <Check className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => {
-              setIsAddingNew(false);
-              setInputValue("");
-            }}
-            disabled={isCreating}
-            type="button"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+        <Input
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          placeholder={`Enter new ${label.toLowerCase()}...`}
+          disabled={isCreating}
+          autoFocus
+        />
       </div>
     );
   }

@@ -4,6 +4,7 @@ import api from "../../../api/client";
 import type { Activity } from "../../../types/activity";
 import type { Objective } from "../../../types/objective";
 import type { BudgetLineItem } from "../../../types/budgetItem";
+import { toBackendStatus, toFrontendStatus } from "../../../utils/projectStatusUtils";
 
 // Response wrapper type (paginated)
 interface ApiResponse<T> {
@@ -129,7 +130,7 @@ export const budgetItemsApi = {
   },
 };
 
-import type { Project } from "../../../context/ProjectContext";
+import type { Project } from "../../../types/project";
 
 // Projects API (for status updates)
 export const projectsApi = {
@@ -138,10 +139,18 @@ export const projectsApi = {
     projectId: number,
     status: string
   ): Promise<Project> => {
+    // Convert frontend status format to backend format
+    const backendStatus = toBackendStatus(status);
+    
     const res = await api.patch<Project>(`/api/projects/${projectId}/`, {
-      project_status: status,
+      project_status: backendStatus,
     });
-    return res.data;
+    
+    // Convert backend status format to frontend format
+    const responseData = res.data;
+    responseData.project_status = toFrontendStatus(responseData.project_status) as Project["project_status"];
+    
+    return responseData;
   },
 };
 

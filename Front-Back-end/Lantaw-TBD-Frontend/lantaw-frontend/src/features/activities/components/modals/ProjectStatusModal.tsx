@@ -26,6 +26,7 @@ interface ProjectStatusModalProps {
   onStatusChange: (status: Project["project_status"]) => void;
   onUpdate: () => void;
   error?: string | null;
+  isLoading?: boolean;
 }
 
 export const ProjectStatusModal: React.FC<ProjectStatusModalProps> = ({
@@ -35,6 +36,7 @@ export const ProjectStatusModal: React.FC<ProjectStatusModalProps> = ({
   onStatusChange,
   onUpdate,
   error,
+  isLoading = false,
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -80,10 +82,12 @@ export const ProjectStatusModal: React.FC<ProjectStatusModalProps> = ({
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={onUpdate}>Update Status</Button>
+          <Button onClick={onUpdate} disabled={isLoading}>
+            {isLoading ? "Updating..." : "Update Status"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

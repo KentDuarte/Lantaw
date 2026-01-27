@@ -610,36 +610,12 @@ const PersonnelLayout = () => {
   // Role handlers
   // Adapter for creating a role from the modal
   const handleCreateRole = async (name: string) => {
-    if (user?.role === "Project Staff" && currentProject) {
-      setPendingChangeRequest({
-        changeType: 'ROLE',
-        operation: 'CREATE',
-        entityId: null,
-        currentState: null,
-        proposedChanges: { name },
-      });
-      setIsSubmitChangeRequestModalOpen(true);
-      return null;
-    } else {
-      return await addRole({ name });
-    }
+    return await addRole({ name });
   };
 
   // Department handlers
   const handleCreateDepartment = async (name: string) => {
-    if (user?.role === "Project Staff" && currentProject) {
-      setPendingChangeRequest({
-        changeType: 'DEPARTMENT',
-        operation: 'CREATE',
-        entityId: null,
-        currentState: null,
-        proposedChanges: { name },
-      });
-      setIsSubmitChangeRequestModalOpen(true);
-      return null;
-    } else {
-      return await addDepartment({ name });
-    }
+    return await addDepartment({ name });
   };
 
   // Personnel operations
@@ -815,7 +791,12 @@ const PersonnelLayout = () => {
       )}
 
       {/* Change Request Submission Modal */}
-      {pendingChangeRequest && currentProject && (
+      {/* Only show for UPDATE/DELETE operations, not CREATE for roles/departments (but allow CREATE for personnel) */}
+      {pendingChangeRequest && 
+       currentProject && 
+       !(pendingChangeRequest.operation === 'CREATE' && 
+         (pendingChangeRequest.changeType === 'ROLE' || 
+          pendingChangeRequest.changeType === 'DEPARTMENT')) && (
         <SubmitChangeRequestModal
           open={isSubmitChangeRequestModalOpen}
           onOpenChange={setIsSubmitChangeRequestModalOpen}

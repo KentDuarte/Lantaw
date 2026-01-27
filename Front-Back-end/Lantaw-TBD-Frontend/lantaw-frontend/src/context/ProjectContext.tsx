@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 import { CURRENT_PROJECT } from "../api/constants";
 import type { Project } from "../types/project";
 import api from "../api/client";
+import { normalizeProjectStatus } from "../utils/projectStatusUtils";
 interface ProjectContextType {
   currentProject: Project | null;
   setCurrentProject: (project: Project) => void;
@@ -34,7 +35,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
   const refetchProject = async (projectId: number): Promise<void> => {
     try {
       const response = await api.get(`/api/projects/${projectId}/`);
-      const updatedProject: Project = response.data;
+      const updatedProject: Project = normalizeProjectStatus(response.data);
 
       // Use the existing setter which updates both state and localStorage
       setCurrentProject(updatedProject);
