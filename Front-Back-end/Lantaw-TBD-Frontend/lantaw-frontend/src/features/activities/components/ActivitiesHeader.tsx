@@ -27,7 +27,7 @@ export const ActivitiesHeader: React.FC<ActivitiesHeaderProps> = ({
     <div className="flex items-center justify-between">
       <div className="flex-1">
         <div className="flex items-center gap-4 mb-2">
-          <h1 className="text-[24px] font-bold font-[Instrument_Sans]">
+          <h1 className="text-[24px] font-bold">
             Activities Management
           </h1>
           <Badge
