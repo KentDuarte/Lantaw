@@ -47,7 +47,7 @@ interface Project {
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
-  const { currentProject, setCurrentProject } = useProject();
+  const { currentProject, setCurrentProject, clearProject } = useProject();
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] =
     useState(false);
   const [createProjectError, setCreateProjectError] = useState("");
@@ -194,6 +194,11 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             ? response.data 
             : (response.data.results || []);
           setProjects(projectData);
+          // Clear currentProject if no projects exist
+          if (projectData.length === 0) {
+            clearProject();
+            return;
+          }
         }
         // For Project Staff, fetch from user.projects array
         else if (user.role === "Project Staff" && user.projects?.length) {
@@ -202,14 +207,20 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           );
           projectData = responses.map((res) => res.data);
           setProjects(projectData);
+          // Clear currentProject if no projects exist
+          if (projectData.length === 0) {
+            clearProject();
+            return;
+          }
         } else if (user.role === "Project Staff") {
           // Project Staff with no projects - clear current project and set empty array
           setProjects([]);
-          setCurrentProject(null);
+          clearProject();
           return;
         } else {
           // Ensure projects is always an array
           setProjects([]);
+          clearProject();
           return;
         }
 
