@@ -31,6 +31,11 @@ This guide provides step-by-step instructions for creating screen recordings dem
 ### 1. Login & Initial Overview (30 seconds)
 **Actions:**
 - Show login page
+- **Optional – Create Project Staff account:**
+  - Click "Register" on the login screen
+  - Fill in required fields (name, email, password, and any other required details)
+  - Submit the form and confirm that the account was created successfully
+  - Return to the login page
 - Log in with Project Staff credentials
 - Navigate to Overview/Dashboard page
 - **Highlight:** Project selection in sidebar (only shows assigned projects)
