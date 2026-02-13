@@ -42,7 +42,7 @@ const ActivitiesLayout = () => {
   const { changeRequests } = useChangeRequests(currentProject?.id);
   
   // Helper to check if financial values should be hidden
-  const hideFinancialValues = user?.role === "Executive";
+  const hideFinancialValues = false; // Executives can now view amounts
 
   // Project status state
   const [projectStatus, setProjectStatus] = useState<

@@ -49,7 +49,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
   userRole,
   error,
 }) => {
-  const hideFinancialValues = userRole === "Executive";
+  const hideFinancialValues = false; // Executives can now view amounts
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [checkingStaff, setCheckingStaff] = useState(false);
 

@@ -694,7 +694,7 @@ const PersonnelLayout = () => {
                 onDeleteHonoraria={handleDeleteHonoraria}
                 onAddCompensation={handleAddCompensation}
                 showActions={user?.role !== "Executive"}
-                hideFinancialValues={user?.role === "Executive"}
+                hideFinancialValues={false} // Executives can now view amounts
               />
             );
           })}

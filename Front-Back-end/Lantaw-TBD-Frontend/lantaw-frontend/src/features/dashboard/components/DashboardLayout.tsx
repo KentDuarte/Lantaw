@@ -168,7 +168,7 @@ const DashboardLayout = () => {
   }, [budgetView, categoryData]);
 
   // Helper function to check if financial values should be hidden
-  const hideFinancialValues = user?.role === "Executive";
+  const hideFinancialValues = false; // Executives can now view amounts
 
   // Helper function to change views of budget pie chart based on click
   const renderBudgetBreakdown = () => {

@@ -1,6 +1,6 @@
 // Helper function to check if financial values should be hidden for executives
 export const shouldHideFinancialValues = (userRole?: string): boolean => {
-  return userRole === "Executive";
+  return false; // Executives can now view amounts
 };
 
 // Formats a string or number into Philippine Peso currency.
