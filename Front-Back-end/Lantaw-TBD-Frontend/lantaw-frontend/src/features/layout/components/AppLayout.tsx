@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { NavLink, useLocation, Outlet } from "react-router-dom";
+import { NavLink, useLocation, Outlet, useNavigate } from "react-router-dom";
 import {
   SidebarProvider,
   Sidebar,
@@ -32,6 +32,7 @@ import {
   Eye,
   Plus,
   FileText,
+  LogOut,
 } from "lucide-react";
 import api from "../../../api/client";
 import { useProject } from "../../../context/ProjectContext";
@@ -45,7 +46,8 @@ interface Project {
 }
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const { currentProject, setCurrentProject, clearProject } = useProject();
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] =
@@ -259,6 +261,12 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // Handle logout
+  const handleLogout = async () => {
+    await logout();
+    navigate("/landing");
+  };
+
   // Determine current page title based on route path
   const currentPage =
     menuItems.find((item) => item.path === location.pathname)?.name ||
@@ -295,6 +303,17 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+                {/* Logout button */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={handleLogout}
+                    tooltip="Logout"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

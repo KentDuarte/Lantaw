@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -16,7 +15,6 @@ import {
   Clock,
   Pencil,
   Key,
-  LogOut,
   Circle,
 } from "lucide-react";
 import { formatDate, formatDateTime } from "../../../utils/formatHelpers";
@@ -25,8 +23,7 @@ import ChangePasswordModal from "./ChangePasswordModal";
 import api from "../../../api/client";
 
 const ProfileLayout = () => {
-  const { user, loading, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
@@ -51,12 +48,6 @@ const ProfileLayout = () => {
       return "destructive";
     }
     return "secondary";
-  };
-
-  // Handle logout
-  const handleLogout = async () => {
-    await logout();
-    navigate("/landing");
   };
 
   // Handle edit profile success - refresh user data
@@ -163,14 +154,6 @@ const ProfileLayout = () => {
               >
                 <Key className="h-4 w-4" />
                 Change Password
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                className="flex items-center gap-2 text-destructive hover:text-destructive"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
               </Button>
             </div>
           </div>
