@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
 import { Button } from "../components/common/button";
+import { Input } from "../components/common/input";
 import { useAuth } from "../context/AuthContext";
 import type { Activity } from "../types/activity";
 import type { Objective } from "../types/objective";
+import ProjectDetailsModal from "./ProjectDetailsModal";
 
 interface Project {
   id: number;
@@ -22,6 +24,9 @@ export default function PublicProjects() {
   const [error, setError] = useState<string | null>(null);
   const [activityStatuses, setActivityStatuses] = useState<Record<number, ActivityStatus>>({});
   const [loadingActivities, setLoadingActivities] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Function to fetch all activities for a project
   const fetchAllActivitiesForProject = async (projectId: number): Promise<Activity[]> => {
@@ -165,6 +170,29 @@ export default function PublicProjects() {
     fetchActivities();
   }, [authLoading, projects]); // Depend on auth loading state and projects
 
+  // Filter projects based on search query
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return projects;
+    }
+    const query = searchQuery.toLowerCase().trim();
+    return projects.filter(
+      (project) =>
+        project.name.toLowerCase().includes(query) ||
+        (project.project_leader?.toLowerCase().includes(query) ?? false)
+    );
+  }, [projects, searchQuery]);
+
+  const handleProjectClick = (project: Project) => {
+    setSelectedProject(project);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedProject(null);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <header className="flex items-center justify-between px-8 py-6 border-b">
@@ -191,6 +219,24 @@ export default function PublicProjects() {
           )}
 
           {!loading && !error && projects.length > 0 && (
+            <div className="mb-4">
+              <Input
+                type="text"
+                placeholder="Search by project name or leader..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          )}
+
+          {!loading && !error && filteredProjects.length === 0 && projects.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              No projects match your search.
+            </p>
+          )}
+
+          {!loading && !error && filteredProjects.length > 0 && (
             <div className="rounded-md border bg-card overflow-hidden">
               <table className="w-full">
                 <thead className="bg-muted">
@@ -201,7 +247,7 @@ export default function PublicProjects() {
                   </tr>
                 </thead>
                 <tbody>
-                  {projects.map((project) => {
+                  {filteredProjects.map((project) => {
                     const status = activityStatuses[project.id];
                     const getStatusStyle = (status: ActivityStatus | undefined) => {
                       if (!status || status === "Unknown") {
@@ -221,7 +267,14 @@ export default function PublicProjects() {
 
                     return (
                       <tr key={project.id} className="border-t">
-                        <td className="px-4 py-3 text-sm">{project.name}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <button
+                            onClick={() => handleProjectClick(project)}
+                            className="text-left hover:underline cursor-pointer font-medium text-primary"
+                          >
+                            {project.name}
+                          </button>
+                        </td>
                         <td className="px-4 py-3 text-sm">
                           {loadingActivities ? (
                             <span className="text-muted-foreground">Loading...</span>
@@ -243,6 +296,15 @@ export default function PublicProjects() {
           )}
         </div>
       </main>
+
+      {selectedProject && (
+        <ProjectDetailsModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          project={selectedProject}
+          fetchAllActivitiesForProject={fetchAllActivitiesForProject}
+        />
+      )}
     </div>
   );
 }
