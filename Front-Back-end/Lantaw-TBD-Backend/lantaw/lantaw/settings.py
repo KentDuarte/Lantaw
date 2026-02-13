@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'budget',
     'core',
     'change_requests',
+    'history_log',
     'django_seed'
 ]
 

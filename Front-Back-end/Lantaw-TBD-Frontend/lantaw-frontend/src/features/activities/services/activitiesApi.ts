@@ -98,6 +98,7 @@ export const activitiesApi = {
       projected_expense: string | null;
       actual_expense: string | null;
       activity_budget_item: number | null;
+      description?: string;
     }
   ): Promise<Activity> => {
     const res = await api.patch<Activity>(

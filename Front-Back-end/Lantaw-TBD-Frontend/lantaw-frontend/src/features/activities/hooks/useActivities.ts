@@ -286,7 +286,8 @@ export const useActivities = (projectId: number | null): UseActivitiesReturn => 
   const addExpense = useCallback(async (
     objectiveId: number,
     activityId: number,
-    additionalAmount: number
+    additionalAmount: number,
+    description: string
   ) => {
     if (!projectId) return;
     
@@ -314,6 +315,7 @@ export const useActivities = (projectId: number | null): UseActivitiesReturn => 
           activity_budget_item: currentActivity.activity_budget_item ?? null,
           projected_expense: currentActivity.projected_expense,
           actual_expense: newTotalExpense.toString(),
+          description: description,
         }
       );
 

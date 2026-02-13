@@ -33,6 +33,7 @@ import {
   Plus,
   FileText,
   LogOut,
+  History,
 } from "lucide-react";
 import api from "../../../api/client";
 import { useProject } from "../../../context/ProjectContext";
@@ -160,6 +161,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     ...(user?.role === "Admin" || user?.role === "Project Staff" 
       ? [{ name: "Change Requests", icon: FileText, path: "/change-requests" }] 
       : []),
+    // History Log available for all user types
+    { name: "History Log", icon: History, path: "/history-log" },
     { name: "Profile", icon: UserCircle, path: "/profile" },
   ];
 

@@ -1,8 +1,10 @@
 from rest_framework import viewsets, permissions
 from rest_framework.exceptions import PermissionDenied
+from django.utils import timezone
 from .models import Objective, Activity
 from .serializers import ObjectiveReadSerializer, ObjectiveWriteSerializer, ActivitySerializer
 from projects.models import Project
+from history_log.models import HistoryLog
 
 class IsAdminExecutiveOrProjectStaff(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -21,9 +23,9 @@ class IsAdminExecutiveOrProjectStaff(permissions.BasePermission):
         # Read only
         if user.role == "EXECUTIVE":
             return request.method in permissions.SAFE_METHODS
-        # Project Staff: Read-only access (must use Change Requests for edits)
+        # Project Staff: Can perform write operations on activities/expenses
         if user.role == "PROJECT_STAFF":
-            return request.method in permissions.SAFE_METHODS
+            return True
         
         return False
 
@@ -122,4 +124,68 @@ class ActivityViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         objective_id = self.kwargs.get("objective_pk")
         objective = Objective.objects.get(pk=objective_id)  # fetch instance
-        serializer.save(objective=objective)
+        activity = serializer.save(objective=objective)
+        
+        # Track in history log for Admin
+        if self.request.user.role == "ADMIN":
+            activity._history_user = self.request.user
+            activity._skip_history_tracking = False
+    
+    def perform_update(self, serializer):
+        """Handle update with description tracking."""
+        activity = self.get_object()
+        user = self.request.user
+        
+        # Get old state before update
+        old_state = {
+            'title': activity.title,
+            'activity_status': activity.activity_status,
+            'projected_expense': str(activity.projected_expense) if activity.projected_expense else None,
+            'actual_expense': str(activity.actual_expense) if activity.actual_expense else None,
+            'activity_budget_item': activity.activity_budget_item_id,
+            'objective': activity.objective_id,
+        }
+        
+        # Get description from request data (for expense updates)
+        description = self.request.data.get('description', None)
+        
+        # Save the activity
+        updated_activity = serializer.save()
+        
+        # Track in history log
+        if user.role == "ADMIN":
+            # Direct Admin edit - track via signals
+            updated_activity._history_user = user
+            if description:
+                updated_activity._history_description = description
+            updated_activity._skip_history_tracking = False
+        elif user.role == "PROJECT_STAFF":
+            # Project Staff direct edit - create history log entry
+            new_state = {
+                'title': updated_activity.title,
+                'activity_status': updated_activity.activity_status,
+                'projected_expense': str(updated_activity.projected_expense) if updated_activity.projected_expense else None,
+                'actual_expense': str(updated_activity.actual_expense) if updated_activity.actual_expense else None,
+                'activity_budget_item': updated_activity.activity_budget_item_id,
+                'objective': updated_activity.objective_id,
+            }
+            
+            # Check if this is an expense update (actual_expense changed)
+            if old_state.get('actual_expense') != new_state.get('actual_expense'):
+                # This is an expense update - use provided description
+                history_description = description or f"Updated expense for activity: {updated_activity.title}"
+            else:
+                history_description = description or f"Updated activity: {updated_activity.title}"
+            
+            HistoryLog.objects.create(
+                timestamp=timezone.now(),
+                user=user,
+                action='UPDATE',
+                change_type='ACTIVITY',
+                description=history_description,
+                project=updated_activity.objective.project,
+                entity_id=updated_activity.id,
+                old_state=old_state,
+                new_state=new_state,
+                related_change_request=None
+            )

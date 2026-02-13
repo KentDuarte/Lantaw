@@ -509,45 +509,17 @@ const ActivitiesLayout = () => {
     }
   };
 
-  const handleAddExpense = async (amount: number) => {
+  const handleAddExpense = async (amount: number, description: string) => {
     if (!editingObjective || !editingActivity) return;
     
-    if (user?.role === "Project Staff" && currentProject) {
-      // Calculate new actual expense
-      const currentActual = Number(editingActivity.actual_expense || 0);
-      const newActual = currentActual + amount;
-      
-      // Show change request modal for Project Staff
-      setPendingChangeRequest({
-        changeType: 'ACTIVITY',
-        operation: 'UPDATE',
-        entityId: editingActivity.id,
-        currentState: {
-          title: editingActivity.title,
-          activity_status: editingActivity.activity_status,
-          projected_expense: editingActivity.projected_expense,
-          actual_expense: editingActivity.actual_expense,
-          activity_budget_item: editingActivity.activity_budget_item,
-        },
-        proposedChanges: {
-          title: editingActivity.title,
-          activity_status: editingActivity.activity_status,
-          projected_expense: editingActivity.projected_expense,
-          actual_expense: newActual.toString(),
-          activity_budget_item: editingActivity.activity_budget_item,
-        },
-      });
-      setIsSubmitChangeRequestModalOpen(true);
-      setIsAddExpenseModalOpen(false);
-    } else {
-      // Admin can add expense directly
-      await activities.addExpense(
-        editingObjective.id,
-        editingActivity.id,
-        amount
-      );
-      setEditingActivity(null);
-    }
+    // Both Admin and Project Staff can add expenses directly now
+    await activities.addExpense(
+      editingObjective.id,
+      editingActivity.id,
+      amount,
+      description
+    );
+    setEditingActivity(null);
   };
 
   // Project status update

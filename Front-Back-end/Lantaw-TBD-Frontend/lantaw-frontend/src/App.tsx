@@ -8,6 +8,7 @@ import Activities from "./pages/Activities";
 import Personnel from "./pages/Personnel";
 import Profile from "./pages/Profile";
 import ChangeRequests from "./pages/ChangeRequests";
+import HistoryLog from "./pages/HistoryLog";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { RoleRoute } from "./routes/RoleRoute";
@@ -58,6 +59,14 @@ function App() {
                 element={
                   <RoleRoute allowedRoles={["Admin", "Project Staff"]}>
                     <ChangeRequests />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/history-log"
+                element={
+                  <RoleRoute allowedRoles={["Admin", "Project Staff", "Executive"]}>
+                    <HistoryLog />
                   </RoleRoute>
                 }
               />

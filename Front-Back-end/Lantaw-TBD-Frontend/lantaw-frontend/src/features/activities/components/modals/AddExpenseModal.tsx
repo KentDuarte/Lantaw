@@ -11,13 +11,14 @@ import {
 import { Button } from "../../../../components/common/button";
 import { Input } from "../../../../components/common/input";
 import { Label } from "../../../../components/common/label";
+import { TextArea } from "../../../../components/common/textarea";
 import type { Activity } from "../../../../types/activity";
 
 interface AddExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
   activity: Activity | null;
-  onSubmit: (amount: number) => Promise<void>;
+  onSubmit: (amount: number, description: string) => Promise<void>;
 }
 
 export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
@@ -27,22 +28,25 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   onSubmit,
 }) => {
   const [additionalExpense, setAdditionalExpense] = useState("");
+  const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setAdditionalExpense("");
+      setDescription("");
     }
   }, [isOpen]);
 
   const handleSubmit = async () => {
     const amount = Number(additionalExpense);
     if (!amount || amount <= 0) return;
+    if (!description.trim()) return; // Description is required
 
     setIsSubmitting(true);
     try {
-      await onSubmit(amount);
+      await onSubmit(amount, description.trim());
       onClose();
     } catch (error) {
       console.error("Failed to add expense:", error);
@@ -78,6 +82,22 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               This amount will be added to the current actual expense.
             </p>
           </div>
+          <div>
+            <Label htmlFor="description" className="mb-2">
+              Description <span className="text-destructive">*</span>
+            </Label>
+            <TextArea
+              id="description"
+              placeholder="Describe this expense entry..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              className="resize-none"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              This description will be recorded in the History Log.
+            </p>
+          </div>
           {activity && additionalExpense && Number(additionalExpense) > 0 && (
             <div className="p-3 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground mb-1">
@@ -96,7 +116,8 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             disabled={
               isSubmitting ||
               !additionalExpense ||
-              Number(additionalExpense) <= 0
+              Number(additionalExpense) <= 0 ||
+              !description.trim()
             }
           >
             {isSubmitting ? "Adding..." : "Confirm Expense"}

@@ -17,11 +17,15 @@ from activities.views import ObjectiveViewSet, ActivityViewSet
 from personnel.views import RoleViewSet, DepartmentViewSet, PersonnelViewSet
 from budget.views import BudgetLineItemViewSet, CompensationViewSet
 from change_requests.views import ChangeRequestViewSet
+from history_log.views import HistoryLogViewSet
 
 router = routers.SimpleRouter()
 
 # Change requests (Admin-only top-level endpoint)
 router.register(r'change-requests', ChangeRequestViewSet, basename='change-requests')
+
+# History log (accessible to all authenticated users)
+router.register(r'history-log', HistoryLogViewSet, basename='history-log')
 
 # Projects and its nested routes
 router.register(r'projects', ProjectViewSet, basename='project')
