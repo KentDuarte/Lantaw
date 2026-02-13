@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "../components/common/dialog";
-import { BudgetOverviewChart } from "../features/dashboard/components/BudgetOverviewChart";
 import { getProjectedExpenseSummaryByBudgetItem } from "../features/dashboard/utils/budgetMetrics";
+import { OVERVIEW_COLORS } from "../features/dashboard/utils/pieChartHelper";
 import type { Activity } from "../types/activity";
 import type { BudgetItem } from "../features/dashboard/utils/pieChartHelper";
 
@@ -66,14 +67,9 @@ export default function ProjectDetailsModal({
   const mooeAmount = budgetData.find((item) => item.name === "MOOE")?.value || 0;
   const coAmount = budgetData.find((item) => item.name === "Capital Outlay")?.value || 0;
 
-  // Empty function for onSliceClick (display-only mode)
-  const handleSliceClick = () => {
-    // No-op: chart is display-only
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl sm:max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{project.name}</DialogTitle>
         </DialogHeader>
@@ -117,11 +113,28 @@ export default function ProjectDetailsModal({
               {/* Donut Chart */}
               {budgetData.length > 0 ? (
                 <div className="mt-6">
-                  <BudgetOverviewChart
-                    data={budgetData}
-                    onSliceClick={handleSliceClick}
-                    hideFinancialValues={false}
-                  />
+                  <ResponsiveContainer width="100%" height={400}>
+                    <PieChart>
+                      <Pie
+                        data={budgetData as any}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={80}
+                        outerRadius={140}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, value }) => `${name}: ₱${value.toLocaleString()}`}
+                        labelLine={false}
+                      >
+                        {budgetData.map((_, index) => (
+                          <Cell
+                            key={`cell-overview-${index}`}
+                            fill={OVERVIEW_COLORS[index % OVERVIEW_COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
               ) : (
                 <div className="py-8 text-center text-muted-foreground">
