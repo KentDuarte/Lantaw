@@ -89,18 +89,22 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
     if (formData.startDate && formData.duration) {
       const calculatedEndDate = calculateEndDate(formData.startDate, formData.duration);
       if (calculatedEndDate) {
-        // Check if calculated end date equals start date (shouldn't happen with years, but handle edge case)
+        // Check if calculated end date has the same DAY (day of month) as start date
+        const startDay = formData.startDate.split('-')[2];
+        const calculatedEndDay = calculatedEndDate.split('-')[2];
         let finalEndDate = calculatedEndDate;
-        if (calculatedEndDate === formData.startDate) {
-          // Parse date to avoid timezone issues
+        
+        if (startDay === calculatedEndDay) {
+          // Parse date to avoid timezone issues and subtract 1 more day
           const [year, month, day] = calculatedEndDate.split('-').map(Number);
           const end = new Date(year, month - 1, day);
-          end.setDate(end.getDate() - 2);
+          end.setDate(end.getDate() - 1);
           const endYear = end.getFullYear();
           const endMonth = String(end.getMonth() + 1).padStart(2, '0');
-          const endDay = String(end.getDate()).padStart(2, '0');
-          finalEndDate = `${endYear}-${endMonth}-${endDay}`;
+          const endDayAdjusted = String(end.getDate()).padStart(2, '0');
+          finalEndDate = `${endYear}-${endMonth}-${endDayAdjusted}`;
         }
+        
         // Update end date (only if it changed to avoid infinite loops)
         setFormData((prev) => {
           if (prev.endDate !== finalEndDate) {
@@ -113,28 +117,122 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.startDate, formData.duration]);
 
-  // Auto-adjust End Date if it's identical to Start Date (for manual edits or edge cases)
+  // Auto-adjust End Date if it's on the same DAY as Start Date (for manual edits or edge cases)
   useEffect(() => {
-    if (formData.startDate && formData.endDate && formData.startDate === formData.endDate) {
-      // Parse date to avoid timezone issues
-      const [year, month, day] = formData.endDate.split('-').map(Number);
-      const end = new Date(year, month - 1, day);
-      end.setDate(end.getDate() - 2);
-      const endYear = end.getFullYear();
-      const endMonth = String(end.getMonth() + 1).padStart(2, '0');
-      const endDay = String(end.getDate()).padStart(2, '0');
-      const adjustedEndDate = `${endYear}-${endMonth}-${endDay}`;
-      // Update immediately if dates are equal
-      setFormData((prev) => {
-        // Only update if they're still equal and haven't been adjusted yet
-        if (prev.startDate === prev.endDate && prev.endDate !== adjustedEndDate) {
-          return { ...prev, endDate: adjustedEndDate };
+    if (formData.startDate && formData.endDate) {
+      // Check if the DAY (day of month) is the same
+      const startDay = formData.startDate.split('-')[2]; // Extract day (YYYY-MM-DD format)
+      const endDay = formData.endDate.split('-')[2]; // Extract day (YYYY-MM-DD format)
+      
+      if (startDay === endDay) {
+        // Update error message with countdown starting at 5
+        setFormErrors((prev) => ({
+          ...prev,
+          endDate: "End date cannot be on the same day of the month as start date. Auto-adjusting in 5...",
+        }));
+        
+        // Countdown timer from 5 to 0
+        let countdown = 5;
+        const countdownInterval = setInterval(() => {
+          countdown -= 1;
+          setFormErrors((prev) => ({
+            ...prev,
+            endDate: `End date cannot be on the same day of the month as start date. Auto-adjusting in ${countdown}...`,
+          }));
+          
+          if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            // Parse date to avoid timezone issues
+            const [year, month, day] = formData.endDate.split('-').map(Number);
+            const end = new Date(year, month - 1, day);
+            end.setDate(end.getDate() - 1);
+            const endYear = end.getFullYear();
+            const endMonth = String(end.getMonth() + 1).padStart(2, '0');
+            const endDayAdjusted = String(end.getDate()).padStart(2, '0');
+            const adjustedEndDate = `${endYear}-${endMonth}-${endDayAdjusted}`;
+            
+            setFormData((prev) => {
+              // Check if day is still the same before adjusting
+              const prevStartDay = prev.startDate?.split('-')[2];
+              const prevEndDay = prev.endDate?.split('-')[2];
+              if (prevStartDay === prevEndDay && prev.endDate !== adjustedEndDate) {
+                return { ...prev, endDate: adjustedEndDate };
+              }
+              return prev;
+            });
+            
+            // Clear error after adjustment
+            setTimeout(() => {
+              setFormErrors((prev) => ({ ...prev, endDate: "" }));
+            }, 500);
+          }
+        }, 1000); // Update every second
+        
+        return () => {
+          clearInterval(countdownInterval);
+        };
+      } else {
+        // Clear error if days are no longer the same
+        if (formErrors.endDate?.includes("End date cannot be on the same day of the month as start date")) {
+          setFormErrors((prev) => ({ ...prev, endDate: "" }));
         }
-        return prev;
-      });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.startDate, formData.endDate]);
+
+  // Auto-adjust End Date if it's later than calculated end date from Duration
+  useEffect(() => {
+    if (formData.startDate && formData.endDate && formData.duration) {
+      const calculatedEndDate = calculateEndDate(formData.startDate, formData.duration);
+      
+      if (calculatedEndDate && new Date(formData.endDate) > new Date(calculatedEndDate)) {
+        // Update error message with countdown starting at 5
+        setFormErrors((prev) => ({
+          ...prev,
+          endDate: "End date cannot be later than the calculated end date based on the selected duration. Auto-adjusting in 5...",
+        }));
+        
+        // Countdown timer from 5 to 0
+        let countdown = 5;
+        const countdownInterval = setInterval(() => {
+          countdown -= 1;
+          setFormErrors((prev) => ({
+            ...prev,
+            endDate: `End date cannot be later than the calculated end date based on the selected duration. Auto-adjusting in ${countdown}...`,
+          }));
+          
+          if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            // Adjust end date to the calculated end date
+            setFormData((prev) => {
+              // Recalculate to ensure we have the latest calculated date
+              const latestCalculatedEndDate = calculateEndDate(prev.startDate, prev.duration);
+              if (latestCalculatedEndDate && prev.endDate !== latestCalculatedEndDate) {
+                return { ...prev, endDate: latestCalculatedEndDate };
+              }
+              return prev;
+            });
+            
+            // Clear error after adjustment
+            setTimeout(() => {
+              setFormErrors((prev) => ({ ...prev, endDate: "" }));
+            }, 500);
+          }
+        }, 1000); // Update every second
+        
+        return () => {
+          clearInterval(countdownInterval);
+        };
+      } else {
+        // Clear error if end date is no longer later than calculated date
+        if (formErrors.endDate?.includes("End date cannot be later than the calculated end date based on the selected duration")) {
+          setFormErrors((prev) => ({ ...prev, endDate: "" }));
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.startDate, formData.endDate, formData.duration]);
 
   // Sync field validation
   const validateField = (field: keyof ProjectFormData, value: string) => {
@@ -168,14 +266,29 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
       const end = field === "endDate" ? value : formData.endDate;
 
       if (start && end) {
+        // Check if the DAY (day of month) is the same - not allowed
+        const startDay = start.split('-')[2]; // Extract day (YYYY-MM-DD format)
+        const endDay = end.split('-')[2]; // Extract day (YYYY-MM-DD format)
+        if (startDay === endDay) {
+          error =
+            field === "startDate"
+              ? "Start date and end date cannot be on the same day of the month."
+              : "End date cannot be on the same day of the month as start date.";
+        }
+        // Check if end date is later than calculated end date from duration
+        else if (formData.duration && formData.startDate && field === "endDate") {
+          const calculatedEndDate = calculateEndDate(formData.startDate, formData.duration);
+          if (calculatedEndDate && new Date(end) > new Date(calculatedEndDate)) {
+            error = "End date cannot be later than the calculated end date based on the selected duration.";
+          }
+        }
         // If start > end => invalid
-        if (new Date(start) > new Date(end)) {
+        else if (new Date(start) > new Date(end)) {
           error =
             field === "startDate"
               ? "Start date must be on or before end date."
               : "End date must be on or after start date.";
         }
-        // Note: Identical dates are handled by useEffect that auto-adjusts
       }
     }
 
@@ -193,38 +306,10 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const value = e.target.value;
       
-      // Special handling for endDate: check if it equals startDate and adjust
-      if (field === "endDate" && value && formData.startDate && value === formData.startDate) {
-        // Parse date to avoid timezone issues
-        const [year, month, day] = value.split('-').map(Number);
-        const end = new Date(year, month - 1, day);
-        end.setDate(end.getDate() - 2);
-        const endYear = end.getFullYear();
-        const endMonth = String(end.getMonth() + 1).padStart(2, '0');
-        const endDay = String(end.getDate()).padStart(2, '0');
-        const adjustedValue = `${endYear}-${endMonth}-${endDay}`;
-        setFormData((prev) => ({ ...prev, [field]: adjustedValue }));
-        validateField(field, adjustedValue);
-        return;
-      }
-      
-      // Special handling for startDate: check if endDate equals new startDate and adjust
-      if (field === "startDate" && value && formData.endDate && value === formData.endDate) {
-        // Parse date to avoid timezone issues
-        const [year, month, day] = formData.endDate.split('-').map(Number);
-        const end = new Date(year, month - 1, day);
-        end.setDate(end.getDate() - 2);
-        const endYear = end.getFullYear();
-        const endMonth = String(end.getMonth() + 1).padStart(2, '0');
-        const endDay = String(end.getDate()).padStart(2, '0');
-        const adjustedEndDate = `${endYear}-${endMonth}-${endDay}`;
-        setFormData((prev) => ({ ...prev, [field]: value, endDate: adjustedEndDate }));
-        validateField(field, value);
-        validateField("endDate", adjustedEndDate);
-        return;
-      }
-      
+      // Update the field value first
       setFormData((prev) => ({ ...prev, [field]: value }));
+      
+      // Then validate - this will show error if dates are equal
       validateField(field, value);
     };
 
@@ -271,6 +356,46 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
       const value = (formData as any)[f] ?? "";
       const err = validateField(f, value);
       if (err) hasError = true;
+    }
+
+    // Explicit check for same DAY (day of month) - not allowed
+    // Check both the current end date and the calculated end date from duration
+    if (formData.startDate && formData.endDate) {
+      const startDay = formData.startDate.split('-')[2]; // Extract day (YYYY-MM-DD format)
+      const endDay = formData.endDate.split('-')[2]; // Extract day (YYYY-MM-DD format)
+      
+      // Check if current end date has same day as start date
+      if (startDay === endDay) {
+        setFormErrors((prev) => ({
+          ...prev,
+          endDate: "End date cannot be on the same day of the month as start date.",
+        }));
+        hasError = true;
+      }
+      
+      // Also check if calculated end date from duration would have same day
+      if (formData.duration && formData.startDate) {
+        const calculatedEndDate = calculateEndDate(formData.startDate, formData.duration);
+        if (calculatedEndDate) {
+          const calculatedEndDay = calculatedEndDate.split('-')[2];
+          if (startDay === calculatedEndDay) {
+            setFormErrors((prev) => ({
+              ...prev,
+              endDate: "End date cannot be on the same day of the month as start date.",
+            }));
+            hasError = true;
+          }
+          
+          // Check if manually set end date is later than calculated end date from duration
+          if (new Date(formData.endDate) > new Date(calculatedEndDate)) {
+            setFormErrors((prev) => ({
+              ...prev,
+              endDate: "End date cannot be later than the calculated end date based on the selected duration.",
+            }));
+            hasError = true;
+          }
+        }
+      }
     }
 
     // if projectStaff has no sync error, run the async existence check
