@@ -34,6 +34,7 @@ import {
   FileText,
   LogOut,
   History,
+  BarChart3,
 } from "lucide-react";
 import api from "../../../api/client";
 import { useProject } from "../../../context/ProjectContext";
@@ -187,6 +188,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const allMenuItems = [
     { name: "Overview", icon: LayoutDashboard, path: "/" },
     { name: "Activities", icon: Activity, path: "/activities" },
+    { name: "Analytics", icon: BarChart3, path: "/analytics" },
     { name: "Personnel", icon: Users, path: "/personnel" },
     // Change Requests available for Admin and Project Staff
     ...(user?.role === "Admin" || user?.role === "Project Staff" 

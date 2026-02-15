@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import Landing from "./pages/Landing";
 import Home from "./pages/Home";
 import Activities from "./pages/Activities";
+import Analytics from "./pages/Analytics";
 import Personnel from "./pages/Personnel";
 import Profile from "./pages/Profile";
 import ChangeRequests from "./pages/ChangeRequests";
@@ -49,6 +50,14 @@ function App() {
                 element={
                   <RoleRoute allowedRoles={["Admin", "Project Staff", "Executive"]}>
                     <Activities />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <RoleRoute allowedRoles={["Admin", "Project Staff", "Executive"]}>
+                    <Analytics />
                   </RoleRoute>
                 }
               />
