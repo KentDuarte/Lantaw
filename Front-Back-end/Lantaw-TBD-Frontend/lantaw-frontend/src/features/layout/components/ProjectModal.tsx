@@ -110,6 +110,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
   const [editItemAmount, setEditItemAmount] = useState('');
   const isInitializingRef = useRef(false);
   const hasInitializedRef = useRef(false);
+  const prevInitialBudgetItemsRef = useRef<string>('');
 
   useEffect(() => {
     // Reset errors when modal open/close
@@ -123,19 +124,48 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
       setEditItemAmount('');
       hasInitializedRef.current = false;
       isInitializingRef.current = false;
-    } else if (open && !hasInitializedRef.current) {
-      // Only initialize once when modal opens
-      isInitializingRef.current = true;
-      if (isEdit && initialBudgetItems) {
-        // Load initial budget items when editing
-        setBudgetItems(initialBudgetItems);
-      } else if (!isEdit) {
-        // Reset budget items for new project
-        setBudgetItems({ ps: [], mooe: [], co: [] });
+      prevInitialBudgetItemsRef.current = '';
+    } else if (open) {
+      // Initialize when modal opens
+      if (!hasInitializedRef.current) {
+        // First time opening - initialize
+        isInitializingRef.current = true;
+        if (isEdit && initialBudgetItems) {
+          // Load initial budget items when editing
+          const itemsStr = JSON.stringify(initialBudgetItems);
+          prevInitialBudgetItemsRef.current = itemsStr;
+          setBudgetItems(initialBudgetItems);
+        } else if (!isEdit) {
+          // Reset budget items for new project
+          setBudgetItems({ ps: [], mooe: [], co: [] });
+        }
+        hasInitializedRef.current = true;
+        isInitializingRef.current = false;
+      } else if (isEdit && initialBudgetItems) {
+        // Modal is already open, check if initialBudgetItems changed (data loaded after modal opened)
+        const newItemsStr = JSON.stringify(initialBudgetItems);
+        const prevItemsStr = prevInitialBudgetItemsRef.current;
+        
+        // Only update if:
+        // 1. The initialBudgetItems actually changed (different from previous)
+        // 2. Current budgetItems is empty (meaning we haven't loaded data yet)
+        // 3. We're not currently initializing
+        const currentItemsEmpty = budgetItems.ps.length === 0 && 
+                                  budgetItems.mooe.length === 0 && 
+                                  budgetItems.co.length === 0;
+        
+        if (newItemsStr !== prevItemsStr && currentItemsEmpty && !isInitializingRef.current) {
+          isInitializingRef.current = true;
+          prevInitialBudgetItemsRef.current = newItemsStr;
+          setBudgetItems(initialBudgetItems);
+          isInitializingRef.current = false;
+        } else if (newItemsStr !== prevItemsStr) {
+          // Update the ref even if we don't update state, to track the change
+          prevInitialBudgetItemsRef.current = newItemsStr;
+        }
       }
-      hasInitializedRef.current = true;
-      isInitializingRef.current = false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, isEdit, initialBudgetItems]);
   
   // Sync budget items changes to parent component (only after initialization)
@@ -638,7 +668,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           {/* Conditional Title */}
           <DialogTitle>{modalTitle}</DialogTitle>

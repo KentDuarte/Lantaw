@@ -392,8 +392,16 @@ const DashboardLayout = () => {
   }, [changeRequests, currentProject?.id, user?.role]);
 
   // Handlers for editing project
-  const handleOpenEditProjectModal = () => {
+  const handleOpenEditProjectModal = async () => {
     setEditProjectError("");
+    // Refetch project to ensure we have the latest data including budget_items
+    if (currentProject?.id) {
+      try {
+        await refetchProject(currentProject.id);
+      } catch (error) {
+        console.error("Failed to refetch project:", error);
+      }
+    }
     setIsEditProjectModalOpen(true);
   };
 
