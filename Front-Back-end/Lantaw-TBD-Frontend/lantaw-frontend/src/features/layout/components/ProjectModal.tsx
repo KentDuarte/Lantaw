@@ -407,9 +407,11 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
             >
               <SelectTrigger
                 id="create-project-duration"
-                className={`${inputBaseClass} ${
-                  formErrors.duration ? errorInputClass : normalInputClass
-                }`}
+                className={
+                  formErrors.duration
+                    ? "border-red-500 focus-visible:ring-red-300"
+                    : ""
+                }
               >
                 <SelectValue placeholder="Select duration..." />
               </SelectTrigger>
