@@ -67,7 +67,7 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
     <AccordionItem
       key={personnel.id}
       value={`personnel-${personnel.id}`}
-      className="border rounded-lg group"
+      className="group"
     >
       <Card>
         {/* Header/Trigger */}

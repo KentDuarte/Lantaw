@@ -58,6 +58,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     name: "",
     projectLeader: "",
     description: "",
+    duration: "",
     startDate: "",
     endDate: "",
     totalGrant: "",

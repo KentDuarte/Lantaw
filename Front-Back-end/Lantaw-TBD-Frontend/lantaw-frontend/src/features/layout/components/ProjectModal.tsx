@@ -11,12 +11,20 @@ import { Label } from "../../../components/common/label";
 import { Input } from "../../../components/common/input";
 import { TextArea } from "../../../components/common/textarea";
 import { Button } from "../../../components/common/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/common/select";
 
 interface ProjectFormData {
   name: string;
   projectLeader: string;
   description: string;
   totalGrant: string;
+  duration: string;
   startDate: string;
   endDate: string;
   projectStaff: string;
@@ -38,6 +46,24 @@ type FormErrors = Partial<Record<keyof ProjectFormData, string>>;
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Helper function to calculate end date from start date + duration
+// End date is calculated as the day BEFORE the anniversary date
+// e.g., Start: Feb 2, 2026, Duration: 1 year → End: Feb 1, 2027
+const calculateEndDate = (startDate: string, duration: string): string => {
+  if (!startDate || !duration) return "";
+  // Parse the date string to avoid timezone issues
+  const [year, month, day] = startDate.split('-').map(Number);
+  const start = new Date(year, month - 1, day); // month is 0-indexed
+  start.setFullYear(start.getFullYear() + parseInt(duration));
+  // Subtract 1 day to get the day before the anniversary
+  start.setDate(start.getDate() - 1);
+  // Format as YYYY-MM-DD without timezone conversion
+  const endYear = start.getFullYear();
+  const endMonth = String(start.getMonth() + 1).padStart(2, '0');
+  const endDay = String(start.getDate()).padStart(2, '0');
+  return `${endYear}-${endMonth}-${endDay}`;
+};
+
 const ProjectModal: React.FC<ProjectModalProps> = ({
   open,
   onOpenChange,
@@ -58,6 +84,58 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
     if (!open) setFormErrors({});
   }, [open]);
 
+  // Auto-calculate End Date when Start Date or Duration changes
+  useEffect(() => {
+    if (formData.startDate && formData.duration) {
+      const calculatedEndDate = calculateEndDate(formData.startDate, formData.duration);
+      if (calculatedEndDate) {
+        // Check if calculated end date equals start date (shouldn't happen with years, but handle edge case)
+        let finalEndDate = calculatedEndDate;
+        if (calculatedEndDate === formData.startDate) {
+          // Parse date to avoid timezone issues
+          const [year, month, day] = calculatedEndDate.split('-').map(Number);
+          const end = new Date(year, month - 1, day);
+          end.setDate(end.getDate() - 2);
+          const endYear = end.getFullYear();
+          const endMonth = String(end.getMonth() + 1).padStart(2, '0');
+          const endDay = String(end.getDate()).padStart(2, '0');
+          finalEndDate = `${endYear}-${endMonth}-${endDay}`;
+        }
+        // Update end date (only if it changed to avoid infinite loops)
+        setFormData((prev) => {
+          if (prev.endDate !== finalEndDate) {
+            return { ...prev, endDate: finalEndDate };
+          }
+          return prev;
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.startDate, formData.duration]);
+
+  // Auto-adjust End Date if it's identical to Start Date (for manual edits or edge cases)
+  useEffect(() => {
+    if (formData.startDate && formData.endDate && formData.startDate === formData.endDate) {
+      // Parse date to avoid timezone issues
+      const [year, month, day] = formData.endDate.split('-').map(Number);
+      const end = new Date(year, month - 1, day);
+      end.setDate(end.getDate() - 2);
+      const endYear = end.getFullYear();
+      const endMonth = String(end.getMonth() + 1).padStart(2, '0');
+      const endDay = String(end.getDate()).padStart(2, '0');
+      const adjustedEndDate = `${endYear}-${endMonth}-${endDay}`;
+      // Update immediately if dates are equal
+      setFormData((prev) => {
+        // Only update if they're still equal and haven't been adjusted yet
+        if (prev.startDate === prev.endDate && prev.endDate !== adjustedEndDate) {
+          return { ...prev, endDate: adjustedEndDate };
+        }
+        return prev;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.startDate, formData.endDate]);
+
   // Sync field validation
   const validateField = (field: keyof ProjectFormData, value: string) => {
     let error = "";
@@ -68,6 +146,10 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
 
     if (field === "name") {
       if (!value.trim()) error = "Project name is required.";
+    }
+
+    if (field === "duration") {
+      if (!value.trim()) error = "Duration is required.";
     }
 
     if (field === "totalGrant") {
@@ -93,6 +175,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
               ? "Start date must be on or before end date."
               : "End date must be on or after start date.";
         }
+        // Note: Identical dates are handled by useEffect that auto-adjusts
       }
     }
 
@@ -109,9 +192,46 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
     (field: keyof ProjectFormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const value = e.target.value;
+      
+      // Special handling for endDate: check if it equals startDate and adjust
+      if (field === "endDate" && value && formData.startDate && value === formData.startDate) {
+        // Parse date to avoid timezone issues
+        const [year, month, day] = value.split('-').map(Number);
+        const end = new Date(year, month - 1, day);
+        end.setDate(end.getDate() - 2);
+        const endYear = end.getFullYear();
+        const endMonth = String(end.getMonth() + 1).padStart(2, '0');
+        const endDay = String(end.getDate()).padStart(2, '0');
+        const adjustedValue = `${endYear}-${endMonth}-${endDay}`;
+        setFormData((prev) => ({ ...prev, [field]: adjustedValue }));
+        validateField(field, adjustedValue);
+        return;
+      }
+      
+      // Special handling for startDate: check if endDate equals new startDate and adjust
+      if (field === "startDate" && value && formData.endDate && value === formData.endDate) {
+        // Parse date to avoid timezone issues
+        const [year, month, day] = formData.endDate.split('-').map(Number);
+        const end = new Date(year, month - 1, day);
+        end.setDate(end.getDate() - 2);
+        const endYear = end.getFullYear();
+        const endMonth = String(end.getMonth() + 1).padStart(2, '0');
+        const endDay = String(end.getDate()).padStart(2, '0');
+        const adjustedEndDate = `${endYear}-${endMonth}-${endDay}`;
+        setFormData((prev) => ({ ...prev, [field]: value, endDate: adjustedEndDate }));
+        validateField(field, value);
+        validateField("endDate", adjustedEndDate);
+        return;
+      }
+      
       setFormData((prev) => ({ ...prev, [field]: value }));
       validateField(field, value);
     };
+
+  const handleDurationChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, duration: value }));
+    validateField("duration", value);
+  };
 
   // When staff input loses focus, do an existence check
   const handleStaffBlur = async () => {
@@ -140,6 +260,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
     const fields: (keyof ProjectFormData)[] = [
       "projectLeader",
       "name",
+      "duration",
       "startDate",
       "endDate",
       "totalGrant",
@@ -191,8 +312,8 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
   // Determine whether Create/Save button should be disabled
   const hasErrors = Object.values(formErrors).some((v) => v && v.length > 0);
   const requiredMissing = isEdit
-    ? !formData.name.trim() || !formData.projectLeader.trim()
-    : !formData.name.trim() || !formData.projectLeader.trim() || !formData.projectStaff.trim();
+    ? !formData.name.trim() || !formData.projectLeader.trim() || !formData.duration.trim()
+    : !formData.name.trim() || !formData.projectLeader.trim() || !formData.duration.trim() || !formData.projectStaff.trim();
 
   // Conditionally determine the modal title and submit button text
   const modalTitle = isEdit ? "Edit Project" : "Create New Project";
@@ -273,6 +394,38 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
               placeholder="Enter project description..."
               className="min-h-16"
             />
+          </div>
+
+          {/* Duration */}
+          <div>
+            <Label htmlFor="create-project-duration" className="mb-2">
+              Duration
+            </Label>
+            <Select
+              value={formData.duration}
+              onValueChange={handleDurationChange}
+            >
+              <SelectTrigger
+                id="create-project-duration"
+                className={`${inputBaseClass} ${
+                  formErrors.duration ? errorInputClass : normalInputClass
+                }`}
+              >
+                <SelectValue placeholder="Select duration..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 year</SelectItem>
+                <SelectItem value="2">2 years</SelectItem>
+                <SelectItem value="3">3 years</SelectItem>
+                <SelectItem value="4">4 years</SelectItem>
+                <SelectItem value="5">5 years</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="mt-1 min-h-[20px]">
+              {formErrors.duration ? (
+                <p className="text-xs text-red-600">{formErrors.duration}</p>
+              ) : null}
+            </div>
           </div>
 
           {/* Dates */}

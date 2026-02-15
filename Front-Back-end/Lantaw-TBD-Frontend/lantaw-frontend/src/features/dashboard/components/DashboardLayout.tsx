@@ -94,6 +94,7 @@ const DashboardLayout = () => {
     name: "",
     projectLeader: "",
     description: "",
+    duration: "",
     startDate: "",
     endDate: "",
     totalGrant: "",
@@ -193,13 +194,30 @@ const DashboardLayout = () => {
     }
   };
 
+  // Helper function to calculate duration in years from two dates
+  const calculateDurationFromDates = (startDate: string, endDate: string): string => {
+    if (!startDate || !endDate) return "";
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const years = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+    // Clamp to valid range (1-5 years)
+    if (years < 1) return "1";
+    if (years > 5) return "5";
+    return String(years);
+  };
+
   // Helper for editing project
   useEffect(() => {
     if (currentProject && isEditProjectModalOpen) {
+      const calculatedDuration = calculateDurationFromDates(
+        currentProject.date_start || "",
+        currentProject.date_end || ""
+      );
       setEditFormData({
         name: currentProject.name || "",
         projectLeader: currentProject.project_leader || "",
         description: currentProject.description || "",
+        duration: calculatedDuration,
         startDate: currentProject.date_start || "",
         endDate: currentProject.date_end || "",
         totalGrant: String(currentProject.grant_amount || 0),
