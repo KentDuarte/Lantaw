@@ -65,7 +65,7 @@ const ActivitiesLayout = () => {
 
   // Change request state
   const [pendingChangeRequest, setPendingChangeRequest] = useState<{
-    changeType: 'OBJECTIVE' | 'ACTIVITY';
+    changeType: 'OBJECTIVE';
     operation: 'CREATE' | 'UPDATE' | 'DELETE';
     entityId?: number | null;
     currentState?: Record<string, any> | null;
@@ -153,7 +153,7 @@ const ActivitiesLayout = () => {
     return changeRequests.filter(
       (req) =>
         req.project === currentProject.id &&
-        (req.change_type === "OBJECTIVE" || req.change_type === "ACTIVITY") &&
+        req.change_type === "OBJECTIVE" &&
         req.status === "PENDING"
     );
   }, [changeRequests, currentProject?.id, user?.role]);
@@ -362,24 +362,8 @@ const ActivitiesLayout = () => {
   }) => {
     if (!editingObjective) return;
     
-    if (user?.role === "Project Staff" && currentProject) {
-      // Show change request modal for Project Staff
-      setPendingChangeRequest({
-        changeType: 'ACTIVITY',
-        operation: 'CREATE',
-        entityId: null,
-        currentState: null,
-        proposedChanges: {
-          ...data,
-          objective: editingObjective.id,
-        },
-      });
-      setIsSubmitChangeRequestModalOpen(true);
-      setIsActivityModalOpen(false);
-    } else {
-      // Admin can create directly
-      await activities.createActivity(editingObjective.id, data);
-    }
+    // Both Admin and Project Staff can create activities directly
+    await activities.createActivity(editingObjective.id, data);
   };
 
   const handleEditActivity = async (data: {
@@ -391,122 +375,21 @@ const ActivitiesLayout = () => {
   }) => {
     if (!editingObjective || !editingActivity) return;
     
-    if (user?.role === "Project Staff" && currentProject) {
-      const currentState = {
-        title: editingActivity.title,
-        activity_status: editingActivity.activity_status,
-        projected_expense: editingActivity.projected_expense,
-        actual_expense: editingActivity.actual_expense,
-        activity_budget_item: editingActivity.activity_budget_item,
-      };
-      const proposedChanges = data;
-
-      // Check for field-level conflicts with pending requests
-      const fieldsBeingChanged = getChangedFields(currentState, proposedChanges);
-      
-      const fieldLabels: Record<string, string> = {
-        title: "Title",
-        activity_status: "Activity Status",
-        projected_expense: "Projected Expense",
-        actual_expense: "Actual Expense",
-        activity_budget_item: "Budget Item",
-      };
-
-      // Check pending requests for the same entity
-      for (const pendingReq of pendingChangeRequests) {
-        if (
-          pendingReq.change_type === 'ACTIVITY' &&
-          pendingReq.entity_id === editingActivity.id &&
-          pendingReq.operation === 'UPDATE' &&
-          pendingReq.current_state &&
-          pendingReq.proposed_changes
-        ) {
-          const pendingChangedFields = getChangedFields(
-            pendingReq.current_state,
-            pendingReq.proposed_changes
-          );
-
-          const conflictingFields = Array.from(fieldsBeingChanged).filter((field) =>
-            pendingChangedFields.has(field)
-          );
-
-          if (conflictingFields.length > 0) {
-            const fieldNames = conflictingFields.map((field) => fieldLabels[field] || field).join(", ");
-            throw new Error(
-              `Cannot submit change request. The following field(s) are already pending in a change request: ${fieldNames}. Please wait for admin approval or rejection before submitting changes to these fields.`
-            );
-          }
-        } else if (
-          pendingReq.change_type === 'ACTIVITY' &&
-          pendingReq.entity_id === editingActivity.id &&
-          pendingReq.operation === 'DELETE'
-        ) {
-          throw new Error(
-            "Cannot submit change request. This activity has a pending delete request. Please wait for admin approval or rejection."
-          );
-        }
-      }
-
-      // Show change request modal for Project Staff
-      setPendingChangeRequest({
-        changeType: 'ACTIVITY',
-        operation: 'UPDATE',
-        entityId: editingActivity.id,
-        currentState,
-        proposedChanges,
-      });
-      setIsSubmitChangeRequestModalOpen(true);
-      setIsActivityModalOpen(false);
-    } else {
-      // Admin can update directly
-      await activities.updateActivity(
-        editingObjective.id,
-        editingActivity.id,
-        data
-      );
-      setEditingActivity(null);
-    }
+    // Both Admin and Project Staff can update activities directly
+    await activities.updateActivity(
+      editingObjective.id,
+      editingActivity.id,
+      data
+    );
+    setEditingActivity(null);
   };
 
   const handleDeleteActivity = async () => {
     if (!editingObjective || !editingActivity) return;
     
-    if (user?.role === "Project Staff" && currentProject) {
-      // Check if there's already a pending DELETE request for this activity
-      const hasPendingDelete = pendingChangeRequests.some(
-        (req) =>
-          req.change_type === 'ACTIVITY' &&
-          req.entity_id === editingActivity.id &&
-          req.operation === 'DELETE'
-      );
-
-      if (hasPendingDelete) {
-        throw new Error(
-          "Cannot submit change request. This activity already has a pending delete request. Please wait for admin approval or rejection."
-        );
-      }
-
-      // Show change request modal for Project Staff
-      setPendingChangeRequest({
-        changeType: 'ACTIVITY',
-        operation: 'DELETE',
-        entityId: editingActivity.id,
-        currentState: {
-          title: editingActivity.title,
-          activity_status: editingActivity.activity_status,
-          projected_expense: editingActivity.projected_expense,
-          actual_expense: editingActivity.actual_expense,
-          activity_budget_item: editingActivity.activity_budget_item,
-        },
-        proposedChanges: {},
-      });
-      setIsSubmitChangeRequestModalOpen(true);
-      setIsDeleteActivityModalOpen(false);
-    } else {
-      // Admin can delete directly
-      await activities.deleteActivity(editingObjective.id, editingActivity.id);
-      setEditingActivity(null);
-    }
+    // Both Admin and Project Staff can delete activities directly
+    await activities.deleteActivity(editingObjective.id, editingActivity.id);
+    setEditingActivity(null);
   };
 
   const handleAddExpense = async (amount: number, description: string) => {

@@ -145,6 +145,13 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         # Check for field-level conflicts with pending change requests
         change_type = serializer.validated_data.get('change_type')
         operation = serializer.validated_data.get('operation')
+        
+        # Project Staff cannot submit ACTIVITY change requests (they can edit directly)
+        if user.role == "PROJECT_STAFF" and change_type == "ACTIVITY":
+            raise PermissionDenied(
+                "Project Staff can directly create, update, and delete activities. "
+                "Change requests are not required for activity operations."
+            )
         entity_id = serializer.validated_data.get('entity_id')
         current_state = serializer.validated_data.get('current_state')
         proposed_changes = serializer.validated_data.get('proposed_changes')
