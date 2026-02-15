@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,19 @@ interface ProjectFormData {
   projectStaff: string;
 }
 
+interface BudgetItem {
+  id?: number;
+  category: 'PS' | 'MOOE' | 'CO';
+  description: string;
+  amount: string;
+}
+
+type BudgetCategory = {
+  ps: BudgetItem[];
+  mooe: BudgetItem[];
+  co: BudgetItem[];
+};
+
 interface ProjectModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -40,6 +53,8 @@ interface ProjectModalProps {
   checkStaffExists?: (email: string) => Promise<boolean>;
   userRole?: string;
   error?: string;
+  initialBudgetItems?: BudgetCategory;
+  onBudgetItemsChange?: (budgetItems: BudgetCategory) => void;
 }
 
 type FormErrors = Partial<Record<keyof ProjectFormData, string>>;
@@ -74,15 +89,89 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
   checkStaffExists,
   userRole,
   error,
+  initialBudgetItems,
+  onBudgetItemsChange,
 }) => {
   const hideFinancialValues = false; // Executives can now view amounts
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [checkingStaff, setCheckingStaff] = useState(false);
+  
+  // Budget items state
+  const [budgetItems, setBudgetItems] = useState<BudgetCategory>({
+    ps: [],
+    mooe: [],
+    co: [],
+  });
+  const [addingItemTo, setAddingItemTo] = useState<'ps' | 'mooe' | 'co' | null>(null);
+  const [editingItem, setEditingItem] = useState<{ category: 'ps' | 'mooe' | 'co', index: number } | null>(null);
+  const [newItemDescription, setNewItemDescription] = useState('');
+  const [newItemAmount, setNewItemAmount] = useState('');
+  const [editItemDescription, setEditItemDescription] = useState('');
+  const [editItemAmount, setEditItemAmount] = useState('');
+  const isInitializingRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
   useEffect(() => {
     // Reset errors when modal open/close
-    if (!open) setFormErrors({});
-  }, [open]);
+    if (!open) {
+      setFormErrors({});
+      setAddingItemTo(null);
+      setEditingItem(null);
+      setNewItemDescription('');
+      setNewItemAmount('');
+      setEditItemDescription('');
+      setEditItemAmount('');
+      hasInitializedRef.current = false;
+      isInitializingRef.current = false;
+    } else if (open && !hasInitializedRef.current) {
+      // Only initialize once when modal opens
+      isInitializingRef.current = true;
+      if (isEdit && initialBudgetItems) {
+        // Load initial budget items when editing
+        setBudgetItems(initialBudgetItems);
+      } else if (!isEdit) {
+        // Reset budget items for new project
+        setBudgetItems({ ps: [], mooe: [], co: [] });
+      }
+      hasInitializedRef.current = true;
+      isInitializingRef.current = false;
+    }
+  }, [open, isEdit, initialBudgetItems]);
+  
+  // Sync budget items changes to parent component (only after initialization)
+  useEffect(() => {
+    if (onBudgetItemsChange && hasInitializedRef.current && !isInitializingRef.current) {
+      onBudgetItemsChange(budgetItems);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [budgetItems]);
+  
+  // Calculate category subtotal
+  const calculateCategorySubtotal = (category: 'ps' | 'mooe' | 'co'): number => {
+    return budgetItems[category].reduce((sum, item) => {
+      const amount = parseFloat(item.amount) || 0;
+      return sum + amount;
+    }, 0);
+  };
+  
+  // Calculate total grant amount
+  const calculateTotalGrant = (): number => {
+    return calculateCategorySubtotal('ps') + 
+           calculateCategorySubtotal('mooe') + 
+           calculateCategorySubtotal('co');
+  };
+  
+  // Sync totalGrant with calculated total
+  useEffect(() => {
+    const total = calculateTotalGrant();
+    setFormData((prev) => {
+      if (prev.totalGrant !== total.toString()) {
+        return { ...prev, totalGrant: total.toString() };
+      }
+      return prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [budgetItems]);
 
   // Auto-calculate End Date when Start Date or Duration changes
   useEffect(() => {
@@ -338,6 +427,109 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
     } else {
       setFormErrors((prev) => ({ ...prev, projectStaff: "" }));
     }
+  };
+  
+  // Budget item handlers
+  const handleAddItem = (category: 'ps' | 'mooe' | 'co') => {
+    setAddingItemTo(category);
+    setNewItemDescription('');
+    setNewItemAmount('');
+  };
+  
+  const handleCancelAddItem = () => {
+    setAddingItemTo(null);
+    setNewItemDescription('');
+    setNewItemAmount('');
+  };
+  
+  const handleConfirmAddItem = () => {
+    if (!addingItemTo) return;
+    
+    // Validate
+    if (!newItemDescription.trim()) {
+      return;
+    }
+    const amount = parseFloat(newItemAmount);
+    if (isNaN(amount) || amount < 0) {
+      return;
+    }
+    
+    // Add item
+    const categoryMap = { ps: 'PS', mooe: 'MOOE', co: 'CO' } as const;
+    const newItem: BudgetItem = {
+      category: categoryMap[addingItemTo],
+      description: newItemDescription.trim(),
+      amount: newItemAmount,
+    };
+    
+    setBudgetItems((prev) => ({
+      ...prev,
+      [addingItemTo]: [...prev[addingItemTo], newItem],
+    }));
+    
+    handleCancelAddItem();
+  };
+  
+  const handleEditItem = (category: 'ps' | 'mooe' | 'co', index: number) => {
+    const item = budgetItems[category][index];
+    setEditingItem({ category, index });
+    setEditItemDescription(item.description);
+    setEditItemAmount(item.amount);
+  };
+  
+  const handleCancelEditItem = () => {
+    setEditingItem(null);
+    setEditItemDescription('');
+    setEditItemAmount('');
+  };
+  
+  const handleSaveEditItem = () => {
+    if (!editingItem) return;
+    
+    // Validate
+    if (!editItemDescription.trim()) {
+      return;
+    }
+    const amount = parseFloat(editItemAmount);
+    if (isNaN(amount) || amount < 0) {
+      return;
+    }
+    
+    // Update item
+    setBudgetItems((prev) => {
+      const updated = [...prev[editingItem.category]];
+      updated[editingItem.index] = {
+        ...updated[editingItem.index],
+        description: editItemDescription.trim(),
+        amount: editItemAmount,
+      };
+      return {
+        ...prev,
+        [editingItem.category]: updated,
+      };
+    });
+    
+    handleCancelEditItem();
+  };
+  
+  const handleDeleteItem = (category: 'ps' | 'mooe' | 'co', index: number) => {
+    setBudgetItems((prev) => {
+      const updated = [...prev[category]];
+      updated.splice(index, 1);
+      return {
+        ...prev,
+        [category]: updated,
+      };
+    });
+  };
+  
+  // Format currency
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP',
+      minimumFractionDigits: 2,
+    }).format(amount);
   };
 
   // Full-form validation before submission
@@ -601,78 +793,198 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
             </div>
           </div>
 
-          {/* Grant and Project Staff */}
-          <div className={checkStaffExists ? "grid grid-cols-2 gap-4" : ""}>
-            {!hideFinancialValues && (
-              <div>
-                <Label htmlFor="create-project-grant" className="mb-2">
-                  Grant Amount (₱)
-                </Label>
-                <Input
-                  id="create-project-grant"
-                  type="text" // use text so we can validate ourselves
-                  value={formData.totalGrant}
-                  onChange={(e) => {
-                    const value = e.target.value;
-
-                    // Allow only digits
-                    if (/^\d*$/.test(value)) {
-                      setFormData((prev) => ({ ...prev, totalGrant: value }));
-                      validateField("totalGrant", value); // validate as they type
-                    } else {
-                      // Set error immediately if invalid character is typed
-                      setFormErrors((prev) => ({
-                        ...prev,
-                        totalGrant: "Grant must be a number.",
-                      }));
-                    }
-                  }}
-                  placeholder="0"
-                  className={`${inputBaseClass} ${
-                    formErrors.totalGrant ? errorInputClass : normalInputClass
-                  }`}
-                />
-                <div className="mt-1 min-h-[20px]">
-                  {formErrors.totalGrant && (
-                    <p className="text-xs text-red-600">
-                      {formErrors.totalGrant}
-                    </p>
-                  )}
+          {/* Budget Breakdown Table */}
+          {!hideFinancialValues && (
+            <div>
+              <Label className="mb-2">Budget Breakdown</Label>
+              <div className="border rounded-md overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold w-1/3">Category</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">Items</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(['ps', 'mooe', 'co'] as const).map((categoryKey) => {
+                      const categoryLabels = { ps: 'Personnel Services (PS)', mooe: 'Maintenance and Other Operating Expenses (MOOE)', co: 'Capital Outlay (CO)' };
+                      const categoryLabel = categoryLabels[categoryKey];
+                      const items = budgetItems[categoryKey];
+                      const subtotal = calculateCategorySubtotal(categoryKey);
+                      const isAdding = addingItemTo === categoryKey;
+                      const categoryItems = items.map((item, index) => {
+                        const isEditing = editingItem?.category === categoryKey && editingItem?.index === index;
+                        return { item, index, isEditing };
+                      });
+                      
+                      return (
+                        <tr key={categoryKey} className="border-t">
+                          <td className="px-4 py-3 align-top">
+                            <div className="font-medium text-sm">{categoryLabel}</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Subtotal: {formatCurrency(subtotal)}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="space-y-2">
+                              {categoryItems.map(({ item, index, isEditing }) => (
+                                <div key={index} className="flex items-center gap-2 p-2 bg-muted/30 rounded">
+                                  {isEditing ? (
+                                    <>
+                                      <Input
+                                        value={editItemDescription}
+                                        onChange={(e) => setEditItemDescription(e.target.value)}
+                                        placeholder="Description"
+                                        className="flex-1 text-sm"
+                                      />
+                                      <Input
+                                        type="text"
+                                        value={editItemAmount}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          if (/^\d*\.?\d*$/.test(val)) {
+                                            setEditItemAmount(val);
+                                          }
+                                        }}
+                                        placeholder="Amount"
+                                        className="w-32 text-sm"
+                                      />
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={handleSaveEditItem}
+                                        className="text-xs"
+                                      >
+                                        Save
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={handleCancelEditItem}
+                                        className="text-xs"
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="flex-1 text-sm">{item.description}</span>
+                                      <span className="text-sm font-medium">{formatCurrency(parseFloat(item.amount) || 0)}</span>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleEditItem(categoryKey, index)}
+                                        className="text-xs h-7"
+                                      >
+                                        Edit
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleDeleteItem(categoryKey, index)}
+                                        className="text-xs h-7 text-red-600 hover:text-red-700"
+                                      >
+                                        Delete
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              ))}
+                              
+                              {isAdding ? (
+                                <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-200">
+                                  <Input
+                                    value={newItemDescription}
+                                    onChange={(e) => setNewItemDescription(e.target.value)}
+                                    placeholder="Description"
+                                    className="flex-1 text-sm"
+                                  />
+                                  <Input
+                                    type="text"
+                                    value={newItemAmount}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      if (/^\d*\.?\d*$/.test(val)) {
+                                        setNewItemAmount(val);
+                                      }
+                                    }}
+                                    placeholder="Amount"
+                                    className="w-32 text-sm"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={handleConfirmAddItem}
+                                    className="text-xs"
+                                    disabled={!newItemDescription.trim() || !newItemAmount || parseFloat(newItemAmount) < 0}
+                                  >
+                                    Confirm
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleCancelAddItem}
+                                    className="text-xs"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleAddItem(categoryKey)}
+                                  className="text-xs mt-1"
+                                >
+                                  + Add Item
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-3 p-3 bg-muted/50 rounded-md">
+                <div className="text-sm font-semibold">
+                  Total Grant Amount: {formatCurrency(calculateTotalGrant())}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Project Staff */}
-            {checkStaffExists && (
-              <div>
-                <Label htmlFor="create-project-staff" className="mb-2">
-                  Project Staff (Email)
-                </Label>
-                <Input
-                  id="create-project-staff"
-                  type="email"
-                  value={formData.projectStaff}
-                  onChange={handleChange("projectStaff")}
-                  onBlur={handleStaffBlur}
-                  placeholder="staff@example.com"
-                  className={`${inputBaseClass} ${
-                    formErrors.projectStaff ? errorInputClass : normalInputClass
-                  }`}
-                />
-                <div className="mt-1 min-h-[20px]">
-                  {checkingStaff ? (
-                    <p className="text-xs text-muted-foreground">
-                      Checking...
-                    </p>
-                  ) : formErrors.projectStaff ? (
-                    <p className="text-xs text-red-600">
-                      {formErrors.projectStaff}
-                    </p>
-                  ) : null}
-                </div>
+          {/* Project Staff */}
+          {checkStaffExists && (
+            <div>
+              <Label htmlFor="create-project-staff" className="mb-2">
+                Project Staff (Email)
+              </Label>
+              <Input
+                id="create-project-staff"
+                type="email"
+                value={formData.projectStaff}
+                onChange={handleChange("projectStaff")}
+                onBlur={handleStaffBlur}
+                placeholder="staff@example.com"
+                className={`${inputBaseClass} ${
+                  formErrors.projectStaff ? errorInputClass : normalInputClass
+                }`}
+              />
+              <div className="mt-1 min-h-[20px]">
+                {checkingStaff ? (
+                  <p className="text-xs text-muted-foreground">
+                  Checking...
+                </p>
+                ) : formErrors.projectStaff ? (
+                  <p className="text-xs text-red-600">
+                    {formErrors.projectStaff}
+                  </p>
+                ) : null}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

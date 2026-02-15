@@ -84,3 +84,41 @@ class ProjectPersonnel(models.Model):
     
     def __str__(self):
         return f"{self.personnel} - {self.project}"
+
+class BudgetItem(models.Model):
+    """
+    Model to represent budget items for a project.
+    
+    Fields:
+    - project: Foreign key to the Project model.
+    - category: Budget category (PS, MOOE, CO).
+    - description: Description of the budget item.
+    - amount: Amount allocated for this item.
+    - created_at: Timestamp when the item was created.
+    - updated_at: Timestamp when the item was last updated.
+    """
+    
+    CATEGORY_CHOICES = [
+        ('PS', 'Personnel Services'),
+        ('MOOE', 'Maintenance and Other Operating Expenses'),
+        ('CO', 'Capital Outlay'),
+    ]
+    
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='budget_items')
+    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, null=False, blank=False)
+    description = models.CharField(max_length=255, null=False, blank=False)
+    amount = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        null=False, 
+        blank=False,
+        validators=[MinValueValidator(0.00)]
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['category', 'created_at']
+    
+    def __str__(self):
+        return f"{self.get_category_display()} - {self.description} - ₱{self.amount}"

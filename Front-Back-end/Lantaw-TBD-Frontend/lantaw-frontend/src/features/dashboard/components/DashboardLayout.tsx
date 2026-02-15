@@ -100,6 +100,15 @@ const DashboardLayout = () => {
     totalGrant: "",
     projectStaff: "",
   });
+  const [editProjectBudgetItems, setEditProjectBudgetItems] = useState<{
+    ps: Array<{ id?: number; category: 'PS' | 'MOOE' | 'CO'; description: string; amount: string }>;
+    mooe: Array<{ id?: number; category: 'PS' | 'MOOE' | 'CO'; description: string; amount: string }>;
+    co: Array<{ id?: number; category: 'PS' | 'MOOE' | 'CO'; description: string; amount: string }>;
+  }>({
+    ps: [],
+    mooe: [],
+    co: [],
+  });
 
   //Modal states
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
@@ -223,6 +232,24 @@ const DashboardLayout = () => {
         totalGrant: String(currentProject.grant_amount || 0),
         projectStaff: "",
       });
+      
+      // Load budget items from API response
+      // Transform API format (array) to BudgetCategory format
+      const budgetItems: any = { ps: [], mooe: [], co: [] };
+      if ((currentProject as any).budget_items && Array.isArray((currentProject as any).budget_items)) {
+        (currentProject as any).budget_items.forEach((item: any) => {
+          const categoryKey = item.category.toLowerCase() as 'ps' | 'mooe' | 'co';
+          if (categoryKey in budgetItems) {
+            budgetItems[categoryKey].push({
+              id: item.id,
+              category: item.category,
+              description: item.description,
+              amount: String(item.amount),
+            });
+          }
+        });
+      }
+      setEditProjectBudgetItems(budgetItems);
     }
   }, [currentProject, isEditProjectModalOpen]);
 
@@ -403,6 +430,28 @@ const DashboardLayout = () => {
         grant_amount: currentProject.grant_amount || 0,
       };
 
+      // Transform budget items to API format
+      const budgetItemsPayload = [
+        ...editProjectBudgetItems.ps.map(item => ({
+          id: item.id,
+          category: item.category,
+          description: item.description,
+          amount: item.amount,
+        })),
+        ...editProjectBudgetItems.mooe.map(item => ({
+          id: item.id,
+          category: item.category,
+          description: item.description,
+          amount: item.amount,
+        })),
+        ...editProjectBudgetItems.co.map(item => ({
+          id: item.id,
+          category: item.category,
+          description: item.description,
+          amount: item.amount,
+        })),
+      ];
+      
       // Prepare proposed changes
       const proposedChanges = {
         name: editFormData.name,
@@ -411,6 +460,7 @@ const DashboardLayout = () => {
         date_start: editFormData.startDate,
         date_end: editFormData.endDate,
         grant_amount: parseFloat(editFormData.totalGrant) || 0,
+        budget_items: budgetItemsPayload,
       };
 
       // Get fields that are being changed in this edit
@@ -472,6 +522,28 @@ const DashboardLayout = () => {
     }
 
     try {
+      // Transform budget items to API format
+      const budgetItemsPayload = [
+        ...editProjectBudgetItems.ps.map(item => ({
+          id: item.id,
+          category: item.category,
+          description: item.description,
+          amount: item.amount,
+        })),
+        ...editProjectBudgetItems.mooe.map(item => ({
+          id: item.id,
+          category: item.category,
+          description: item.description,
+          amount: item.amount,
+        })),
+        ...editProjectBudgetItems.co.map(item => ({
+          id: item.id,
+          category: item.category,
+          description: item.description,
+          amount: item.amount,
+        })),
+      ];
+      
       // Create project payload
       const projectPayload = {
         name: editFormData.name,
@@ -480,6 +552,7 @@ const DashboardLayout = () => {
         date_start: editFormData.startDate,
         date_end: editFormData.endDate,
         grant_amount: parseFloat(editFormData.totalGrant) || 0,
+        budget_items: budgetItemsPayload,
       };
 
       // Patch API
@@ -622,6 +695,8 @@ const DashboardLayout = () => {
         onSubmit={handleEditProject}
         userRole={user?.role}
         error={editProjectError}
+        initialBudgetItems={editProjectBudgetItems}
+        onBudgetItemsChange={setEditProjectBudgetItems}
       />
 
       {/* Submit Change Request Modal */}

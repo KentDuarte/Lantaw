@@ -64,6 +64,15 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     totalGrant: "",
     projectStaff: "",
   });
+  const [createProjectBudgetItems, setCreateProjectBudgetItems] = useState<{
+    ps: Array<{ id?: number; category: 'PS' | 'MOOE' | 'CO'; description: string; amount: string }>;
+    mooe: Array<{ id?: number; category: 'PS' | 'MOOE' | 'CO'; description: string; amount: string }>;
+    co: Array<{ id?: number; category: 'PS' | 'MOOE' | 'CO'; description: string; amount: string }>;
+  }>({
+    ps: [],
+    mooe: [],
+    co: [],
+  });
 
   // Helper function to check if  the staff exists in the database  first
   const checkStaffExists = async (email: string): Promise<boolean> => {
@@ -114,6 +123,25 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
       const userId = staffRes.data.id;
 
+      // Transform budget items to API format
+      const budgetItemsPayload = [
+        ...createProjectBudgetItems.ps.map(item => ({
+          category: item.category,
+          description: item.description,
+          amount: item.amount,
+        })),
+        ...createProjectBudgetItems.mooe.map(item => ({
+          category: item.category,
+          description: item.description,
+          amount: item.amount,
+        })),
+        ...createProjectBudgetItems.co.map(item => ({
+          category: item.category,
+          description: item.description,
+          amount: item.amount,
+        })),
+      ];
+      
       // Create project
       const projectPayload = {
         name: createProjectForm.name,
@@ -122,6 +150,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         date_start: createProjectForm.startDate,
         date_end: createProjectForm.endDate,
         grant_amount: parseFloat(createProjectForm.totalGrant) || 0,
+        budget_items: budgetItemsPayload,
       };
 
       const projectRes = await api.post("/api/projects/", projectPayload);
@@ -144,6 +173,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         totalGrant: "",
         projectStaff: "",
       });
+      setCreateProjectBudgetItems({ ps: [], mooe: [], co: [] });
       setCreateProjectError("");
     } catch (err) {
       console.error("Failed to create project:", err);
@@ -364,6 +394,8 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         <ProjectModal
                           open={isCreateProjectModalOpen}
                           onOpenChange={setIsCreateProjectModalOpen}
+                          initialBudgetItems={createProjectBudgetItems}
+                          onBudgetItemsChange={setCreateProjectBudgetItems}
                           formData={createProjectForm}
                           setFormData={setCreateProjectForm}
                           onSubmit={handleCreateProject}
