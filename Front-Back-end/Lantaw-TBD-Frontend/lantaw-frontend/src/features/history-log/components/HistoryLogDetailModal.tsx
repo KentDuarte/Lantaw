@@ -12,7 +12,7 @@ import { Badge } from "../../../components/common/badge";
 import { formatDateTime } from "../../../utils/formatHelpers";
 import { ChangeRequestFieldsDisplay } from "../../change-requests/components/ChangeRequestFieldsDisplay";
 import type { HistoryLog } from "../../../types/historyLog";
-import { ArrowLeft, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 
 interface HistoryLogDetailModalProps {
   historyEntry: HistoryLog;
@@ -91,13 +91,7 @@ export const HistoryLogDetailModal: React.FC<HistoryLogDetailModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl sm:max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>History Log Entry Details</DialogTitle>
-            <Button variant="ghost" onClick={onClose} className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to List
-            </Button>
-          </div>
+          <DialogTitle>History Log Entry Details</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">

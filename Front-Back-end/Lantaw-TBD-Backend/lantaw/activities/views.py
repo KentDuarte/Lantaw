@@ -93,7 +93,83 @@ class ObjectiveViewSet(viewsets.ModelViewSet):
             if user.role == "PROJECT_STAFF" and not project.projectmembers_set.filter(user=user).exists():
                 raise PermissionDenied()
 
-        serializer.save(project_id=project_id)
+        objective = serializer.save(project_id=project_id)
+        
+        # Track in history log for Admin - create directly instead of using signals
+        if user.role == "ADMIN":
+            from history_log.signals import get_objective_state
+            HistoryLog.objects.create(
+                timestamp=timezone.now(),
+                user=user,
+                action='CREATE',
+                change_type='OBJECTIVE',
+                description=f"Created objective: {objective.title}",
+                project=objective.project,
+                entity_id=objective.id,
+                old_state=None,
+                new_state=get_objective_state(objective),
+                related_change_request=None
+            )
+    
+    def perform_update(self, serializer):
+        """Handle objective update with history tracking."""
+        objective = self.get_object()
+        user = self.request.user
+        
+        # Get old state before update
+        old_state = {
+            'title': objective.title,
+            'description': objective.description,
+            'project': objective.project_id,
+        }
+        
+        # Save the objective
+        updated_objective = serializer.save()
+        
+        # Track in history log for Admin
+        if user.role == "ADMIN":
+            new_state = {
+                'title': updated_objective.title,
+                'description': updated_objective.description,
+                'project': updated_objective.project_id,
+            }
+            
+            HistoryLog.objects.create(
+                timestamp=timezone.now(),
+                user=user,
+                action='UPDATE',
+                change_type='OBJECTIVE',
+                description=f"Updated objective: {updated_objective.title}",
+                project=updated_objective.project,
+                entity_id=updated_objective.id,
+                old_state=old_state,
+                new_state=new_state,
+                related_change_request=None
+            )
+    
+    def perform_destroy(self, instance):
+        """Handle objective deletion with history tracking."""
+        user = self.request.user
+        
+        # Track in history log for Admin - create directly before deletion
+        if user.role == "ADMIN":
+            from history_log.signals import get_objective_state
+            # Get state before deletion
+            if hasattr(instance, 'project') and instance.project:
+                HistoryLog.objects.create(
+                    timestamp=timezone.now(),
+                    user=user,
+                    action='DELETE',
+                    change_type='OBJECTIVE',
+                    description=f"Deleted objective: {instance.title}",
+                    project=instance.project,
+                    entity_id=instance.id,
+                    old_state=get_objective_state(instance),
+                    new_state=None,
+                    related_change_request=None
+                )
+        
+        instance.delete()
 
 
 class ActivityViewSet(viewsets.ModelViewSet):
@@ -126,10 +202,21 @@ class ActivityViewSet(viewsets.ModelViewSet):
         objective = Objective.objects.get(pk=objective_id)  # fetch instance
         activity = serializer.save(objective=objective)
         
-        # Track in history log for Admin
+        # Track in history log for Admin - create directly instead of using signals
         if self.request.user.role == "ADMIN":
-            activity._history_user = self.request.user
-            activity._skip_history_tracking = False
+            from history_log.signals import get_activity_state
+            HistoryLog.objects.create(
+                timestamp=timezone.now(),
+                user=self.request.user,
+                action='CREATE',
+                change_type='ACTIVITY',
+                description=f"Created activity: {activity.title}",
+                project=activity.objective.project,
+                entity_id=activity.id,
+                old_state=None,
+                new_state=get_activity_state(activity),
+                related_change_request=None
+            )
     
     def perform_update(self, serializer):
         """Handle update with description tracking."""
@@ -154,11 +241,34 @@ class ActivityViewSet(viewsets.ModelViewSet):
         
         # Track in history log
         if user.role == "ADMIN":
-            # Direct Admin edit - track via signals
-            updated_activity._history_user = user
-            if description:
-                updated_activity._history_description = description
-            updated_activity._skip_history_tracking = False
+            # Direct Admin edit - create history log entry directly (like PROJECT_STAFF)
+            new_state = {
+                'title': updated_activity.title,
+                'activity_status': updated_activity.activity_status,
+                'projected_expense': str(updated_activity.projected_expense) if updated_activity.projected_expense else None,
+                'actual_expense': str(updated_activity.actual_expense) if updated_activity.actual_expense else None,
+                'activity_budget_item': updated_activity.activity_budget_item_id,
+                'objective': updated_activity.objective_id,
+            }
+            
+            # Check if this is an expense update (actual_expense changed)
+            if old_state.get('actual_expense') != new_state.get('actual_expense'):
+                history_description = description or f"Updated expense for activity: {updated_activity.title}"
+            else:
+                history_description = description or f"Updated activity: {updated_activity.title}"
+            
+            HistoryLog.objects.create(
+                timestamp=timezone.now(),
+                user=user,
+                action='UPDATE',
+                change_type='ACTIVITY',
+                description=history_description,
+                project=updated_activity.objective.project,
+                entity_id=updated_activity.id,
+                old_state=old_state,
+                new_state=new_state,
+                related_change_request=None
+            )
         elif user.role == "PROJECT_STAFF":
             # Project Staff direct edit - create history log entry
             new_state = {
@@ -189,3 +299,27 @@ class ActivityViewSet(viewsets.ModelViewSet):
                 new_state=new_state,
                 related_change_request=None
             )
+    
+    def perform_destroy(self, instance):
+        """Handle activity deletion with history tracking."""
+        user = self.request.user
+        
+        # Track in history log for Admin - create directly before deletion
+        if user.role == "ADMIN":
+            from history_log.signals import get_activity_state
+            # Get state before deletion
+            if hasattr(instance, 'objective') and instance.objective:
+                HistoryLog.objects.create(
+                    timestamp=timezone.now(),
+                    user=user,
+                    action='DELETE',
+                    change_type='ACTIVITY',
+                    description=f"Deleted activity: {instance.title}",
+                    project=instance.objective.project,
+                    entity_id=instance.id,
+                    old_state=get_activity_state(instance),
+                    new_state=None,
+                    related_change_request=None
+                )
+        
+        instance.delete()
