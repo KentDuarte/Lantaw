@@ -111,7 +111,7 @@ export function AuthForm({ type, onSubmit, isLoading = false }: AuthFormProps) {
             <Input
               id="lastName"
               type="text"
-              placeholder="LastName"
+              placeholder="Last Name"
               value={formData.lastName}
               onChange={(e) => handleInputChange("lastName", e.target.value)}
               className={errors.lastName ? "border-destructive" : ""}

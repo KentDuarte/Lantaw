@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthForm } from "../../../components/layout/AuthForm.tsx";
 import type { AuthFormData } from "../../../components/layout/AuthForm.tsx";
 import { Eye } from "lucide-react";
+import { Button } from "../../../components/common/button";
 import api from "../../../api/client";
 
 export default function RegisterCard() {
@@ -33,16 +34,25 @@ export default function RegisterCard() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 rounded-xl bg-primary">
-              <Eye className="h-8 w-8 text-primary-foreground" />
-            </div>
-          </div>
-          <h1 className="mb-2">Join Lantaw</h1>
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <header className="flex items-center justify-between px-8 py-6 border-b">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={() => navigate("/")}>
+            Back
+          </Button>
         </div>
+      </header>
+
+      <main className="flex-1 flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="p-3 rounded-xl bg-primary">
+                <Eye className="h-8 w-8 text-primary-foreground" />
+              </div>
+            </div>
+            <h1 className="mb-2">Join Lantaw</h1>
+          </div>
 
         <div className="bg-card border border-border rounded-xl p-8 shadow-sm">
           <div className="mb-6">
@@ -68,7 +78,8 @@ export default function RegisterCard() {
             </p>
           </div>
         </div>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
