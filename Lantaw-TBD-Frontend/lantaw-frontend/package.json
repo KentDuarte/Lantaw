@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "server": "vite",
-    "build": "vite build",
+    "build": "tsc -b && npx vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
