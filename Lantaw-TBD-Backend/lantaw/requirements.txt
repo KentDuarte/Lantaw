@@ -32,7 +32,7 @@ django-markdownx==4.0.7
 django_seed==0.3.1
 djangorestframework==3.15.2
 djangorestframework-jsonapi==8.1.0
-djangorestframework-nested==0.93.4
+drf-nested-routers==0.95.0
 djangorestframework-simplejwt==5.3.1
 drf-spectacular==0.27.2
 docstring_parser==0.17.0
