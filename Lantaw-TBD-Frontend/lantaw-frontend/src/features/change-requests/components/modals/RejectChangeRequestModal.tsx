@@ -63,14 +63,15 @@ export const RejectChangeRequestModal: React.FC<RejectChangeRequestModalProps> =
         changeRequest.operation === 'UPDATE' &&
         changeRequest.proposed_changes &&
         changeRequest.current_state) {
-      const currentExpense = Number(changeRequest.current_state.actual_expense || 0);
+      const cur = changeRequest.current_state;
+      const currentExpense = Number(cur?.actual_expense || 0);
       const proposedExpense = Number(changeRequest.proposed_changes.actual_expense || 0);
-      
-      // Check if only actual_expense changed and it increased
-      const onlyExpenseChanged = Object.keys(changeRequest.proposed_changes).every(key => 
-        key === 'actual_expense' || 
-        changeRequest.proposed_changes[key] === changeRequest.current_state[key]
-      );
+
+      const onlyExpenseChanged = cur
+        ? Object.keys(changeRequest.proposed_changes).every(key =>
+            key === 'actual_expense' || changeRequest.proposed_changes[key] === cur[key]
+          )
+        : false;
       
       if (onlyExpenseChanged && proposedExpense > currentExpense) {
         return 'Reject Adding Expense Entry';

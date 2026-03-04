@@ -17,29 +17,26 @@ const fetchAllPages = async <T>(initialUrl: string): Promise<T[]> => {
   let url: string | null = initialUrl;
 
   while (url) {
-    const res = await api.get<ApiResponse<T>>(url);
-    const data = res.data;
-    
+    const res: { data: ApiResponse<T> } = await api.get<ApiResponse<T>>(url);
+    const data: ApiResponse<T> = res.data;
+
     if (data?.results) {
       allResults.push(...data.results);
     }
-    
+
     // Check if there's a next page
     if (data?.next) {
-      // Handle both absolute URLs and relative URLs
-      if (data.next.startsWith('http://') || data.next.startsWith('https://')) {
-        // Extract the path from the full URL
+      const next = data.next;
+      if (next.startsWith('http://') || next.startsWith('https://')) {
         try {
-          const nextUrl = new URL(data.next);
+          const nextUrl = new URL(next);
           url = nextUrl.pathname + nextUrl.search;
         } catch {
-          // If URL parsing fails, try to extract path manually
-          const match = data.next.match(/\/api\/.*/);
+          const match: RegExpMatchArray | null = next.match(/\/api\/.*/);
           url = match ? match[0] : null;
         }
       } else {
-        // Already a relative URL
-        url = data.next;
+        url = next;
       }
     } else {
       url = null;

@@ -1,6 +1,6 @@
 import { Navigate, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import Landing from "../pages/Landing";
 
 interface ProtectedRouteProps {
@@ -30,7 +30,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // If route is project-scoped and user is required to be a member:
-  if (projectScoped && user?.role === "PROJECT_STAFF") {
+  if (projectScoped && user?.role === "Project Staff") {
     const numericId = Number(projectId);
 
     // Robustly check membership

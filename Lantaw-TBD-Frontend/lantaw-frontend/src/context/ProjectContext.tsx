@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState } from "react";
+import type { ReactNode } from "react";
 import { CURRENT_PROJECT } from "../api/constants";
 import type { Project } from "../types/project";
 import api from "../api/client";

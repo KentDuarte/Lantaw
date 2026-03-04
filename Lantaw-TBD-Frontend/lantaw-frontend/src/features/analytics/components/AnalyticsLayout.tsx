@@ -15,7 +15,7 @@ import type { Activity } from "../../../types/activity";
 
 const AnalyticsLayout = () => {
   const { currentProject } = useProject();
-  const { user, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // Show loading state while user data is being fetched
   if (authLoading) {

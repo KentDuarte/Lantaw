@@ -18,7 +18,7 @@ export const HistoryLogLayout: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<HistoryLog | null>(null);
-  const [filters, setFilters] = useState<HistoryLogFilters>({});
+  const [filters, _setFilters] = useState<HistoryLogFilters>({});
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -97,30 +97,6 @@ export const HistoryLogLayout: React.FC = () => {
         return 'Revert';
       default:
         return action;
-    }
-  };
-
-  // Get change type display name
-  const getChangeTypeDisplayName = (changeType: HistoryLog['change_type']) => {
-    switch (changeType) {
-      case 'ACTIVITY':
-        return 'Activity';
-      case 'OBJECTIVE':
-        return 'Objective';
-      case 'PERSONNEL':
-        return 'Personnel';
-      case 'BUDGET':
-        return 'Budget';
-      case 'COMPENSATION':
-        return 'Compensation';
-      case 'PROJECT':
-        return 'Project';
-      case 'ROLE':
-        return 'Role';
-      case 'DEPARTMENT':
-        return 'Department';
-      default:
-        return changeType;
     }
   };
 
@@ -220,6 +196,8 @@ export const HistoryLogLayout: React.FC = () => {
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}
+                  totalItems={historyEntries.length}
+                  pageSize={pageSize}
                   onPageChange={setCurrentPage}
                 />
               )}

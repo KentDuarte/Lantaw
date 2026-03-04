@@ -24,7 +24,6 @@ import { ChevronDown } from "lucide-react";
 import type {
   ExpenseComparisonItem,
   ProjectSummary,
-  BudgetStatus,
 } from "../utils/barChartHelper";
 import { getBudgetStatus } from "../utils/barChartHelper";
 

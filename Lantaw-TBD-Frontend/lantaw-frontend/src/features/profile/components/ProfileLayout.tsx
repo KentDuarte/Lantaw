@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import {
   Card,
@@ -56,7 +56,7 @@ const ProfileLayout = () => {
     // But we can trigger a manual refresh if needed
     if (user?.id) {
       try {
-        const res = await api.get(`/api/users/${user.id}/`);
+        await api.get(`/api/users/${user.id}/`);
         // Update user in context would require exposing a method
         // For now, the page will refresh on next navigation
       } catch (err) {

@@ -18,7 +18,7 @@ type ActivityStatus = "Active" | "Inactive" | "Completed" | "Unknown";
 
 export default function PublicProjects() {
   const navigate = useNavigate();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

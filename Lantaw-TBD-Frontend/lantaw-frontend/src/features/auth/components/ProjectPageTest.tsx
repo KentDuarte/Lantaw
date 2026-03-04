@@ -16,36 +16,41 @@ const sampleProjects: Project[] = [
   { id: 5, name: "Coastal Cleanup" },
 ];
 
-// Mock users for testing assumptions regardless of the authenticated user
-const mockUsers: Record<
-  "ADMIN" | "PROJECT_STAFF" | "EXECUTIVE",
-  Pick<
-    User,
-    "id" | "firstName" | "lastName" | "role" | "acccountStatus" | "projects"
-  >
-> = {
+type MockRoleKey = "ADMIN" | "PROJECT_STAFF" | "EXECUTIVE";
+
+// Mock users for testing – use actual User shape with role "Admin" | "Project Staff" | "Executive"
+const mockUsers: Record<MockRoleKey, User> = {
   ADMIN: {
     id: "u-admin",
-    firstName: "Alice",
-    lastName: "Admin",
-    role: "ADMIN",
-    acccountStatus: "ACTIVE",
+    first_name: "Alice",
+    last_name: "Admin",
+    email: "admin@test.com",
+    role: "Admin",
+    account_status: "ACTIVE",
+    date_joined: "",
+    last_login: null,
     projects: [],
   },
   PROJECT_STAFF: {
     id: "u-staff",
-    firstName: "Sam",
-    lastName: "Staff",
-    role: "PROJECT_STAFF",
-    acccountStatus: "ACTIVE",
+    first_name: "Sam",
+    last_name: "Staff",
+    email: "staff@test.com",
+    role: "Project Staff",
+    account_status: "ACTIVE",
+    date_joined: "",
+    last_login: null,
     projects: [1, 3],
   },
   EXECUTIVE: {
     id: "u-exec",
-    firstName: "Eve",
-    lastName: "Executive",
-    role: "EXECUTIVE",
-    acccountStatus: "ACTIVE",
+    first_name: "Eve",
+    last_name: "Executive",
+    email: "exec@test.com",
+    role: "Executive",
+    account_status: "ACTIVE",
+    date_joined: "",
+    last_login: null,
     projects: [],
   },
 };
@@ -54,9 +59,9 @@ const normalizeRole = (roleInput: unknown): User["role"] | null => {
   if (roleInput === null || roleInput === undefined) return null;
   const raw = String(roleInput).trim();
   const upper = raw.toUpperCase().replace(/\s+/g, "_");
-  if (upper === "ADMIN") return "ADMIN";
-  if (upper === "EXECUTIVE") return "EXECUTIVE";
-  if (upper === "PROJECT_STAFF") return "PROJECT_STAFF";
+  if (upper === "ADMIN") return "Admin";
+  if (upper === "EXECUTIVE") return "Executive";
+  if (upper === "PROJECT_STAFF") return "Project Staff";
   return null;
 };
 
@@ -68,30 +73,33 @@ const normalizeUser = (u: unknown): User | null => {
   );
   if (!role) return null;
 
-  const firstName = (anyUser.firstName ??
-    anyUser.first_name ??
+  const first_name = (anyUser.first_name ??
+    anyUser.firstName ??
     anyUser.given_name ??
     "") as string;
-  const lastName = (anyUser.lastName ??
-    anyUser.last_name ??
+  const last_name = (anyUser.last_name ??
+    anyUser.lastName ??
     anyUser.family_name ??
     "") as string;
   const projects = Array.isArray(anyUser.projects)
     ? (anyUser.projects as unknown[]).map((p) => Number(p))
     : [];
-  const status = (anyUser.acccountStatus ??
-    anyUser.account_status ??
+  const status = (anyUser.account_status ??
+    anyUser.acccountStatus ??
     anyUser.status ??
-    "ACTIVE") as string;
+    "ACTIVE") as User["account_status"];
 
   return {
     id: String(anyUser.id ?? anyUser.user_id ?? ""),
-    firstName,
-    lastName,
+    first_name,
+    last_name,
+    email: (anyUser.email as string) ?? "",
     role,
-    acccountStatus: String(status).toUpperCase() as User["acccountStatus"],
+    account_status: status,
+    date_joined: (anyUser.date_joined as string) ?? "",
+    last_login: (anyUser.last_login as string | null) ?? null,
     projects,
-  } as User;
+  };
 };
 
 export default function ProjectPage() {
@@ -99,34 +107,32 @@ export default function ProjectPage() {
 
   // Local test harness state
   const [useMock, setUseMock] = useState<boolean>(true);
-  const [selectedMockRole, setSelectedMockRole] = useState<
-    "ADMIN" | "PROJECT_STAFF" | "EXECUTIVE"
-  >("ADMIN");
+  const [selectedMockRole, setSelectedMockRole] = useState<MockRoleKey>("ADMIN");
 
   const effectiveUser: User | null = useMemo(() => {
-    if (useMock) return mockUsers[selectedMockRole] as User;
+    if (useMock) return mockUsers[selectedMockRole];
     return normalizeUser(user as unknown);
   }, [useMock, selectedMockRole, user]);
 
   const visibleProjects: Project[] = useMemo(() => {
     if (!effectiveUser) return [];
-    if (effectiveUser.role === "ADMIN") return sampleProjects;
-    if (effectiveUser.role === "PROJECT_STAFF") {
+    if (effectiveUser.role === "Admin") return sampleProjects;
+    if (effectiveUser.role === "Project Staff") {
       return sampleProjects.filter((p) =>
         effectiveUser.projects.includes(p.id)
       );
     }
-    // EXECUTIVE can see everything but is read-only
+    // Executive can see everything but is read-only
     return sampleProjects;
   }, [effectiveUser]);
 
   const canEditProject = (projectId: number): boolean => {
     if (!effectiveUser) return false;
-    if (effectiveUser.role === "ADMIN") return true;
-    if (effectiveUser.role === "PROJECT_STAFF") {
+    if (effectiveUser.role === "Admin") return true;
+    if (effectiveUser.role === "Project Staff") {
       return effectiveUser.projects.includes(projectId);
     }
-    return false; // EXECUTIVE is view-only
+    return false; // Executive is view-only
   };
 
   return (
@@ -148,9 +154,7 @@ export default function ProjectPage() {
             className="border rounded px-2 py-1"
             value={selectedMockRole}
             onChange={(e) =>
-              setSelectedMockRole(
-                e.target.value as "ADMIN" | "PROJECT_STAFF" | "EXECUTIVE"
-              )
+              setSelectedMockRole(e.target.value as MockRoleKey)
             }
           >
             <option value="ADMIN">ADMIN</option>
@@ -203,7 +207,7 @@ export default function ProjectPage() {
               >
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{p.name}</span>
-                  {effectiveUser?.role === "PROJECT_STAFF" &&
+                  {effectiveUser?.role === "Project Staff" &&
                     (effectiveUser.projects.includes(p.id) ? (
                       <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded">
                         member
@@ -233,7 +237,7 @@ export default function ProjectPage() {
         </ul>
       </div>
 
-      {effectiveUser?.role === "EXECUTIVE" && (
+      {effectiveUser?.role === "Executive" && (
         <p className="text-gray-500 italic">You have read-only access.</p>
       )}
     </div>

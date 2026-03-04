@@ -314,7 +314,6 @@ export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProp
               
               // Special handling for additional_expense field (highlight it)
               if (key === "additional_expense" && isExpenseAddition) {
-                const isChanged = true; // Always highlight additional expense
                 return (
                   <div 
                     key={key}
@@ -415,7 +414,7 @@ export const ChangeRequestFieldsDisplay: React.FC<ChangeRequestFieldsDisplayProp
 
   // For UPDATE operations, show comparison
   if (operation === "UPDATE") {
-    const changedFields = getChangedFields(current_state, proposed_changes);
+    const changedFields = getChangedFields(current_state ?? null, proposed_changes);
     return (
       <div className="space-y-4">
         {current_state && renderFields(current_state, "Current State", "current", changedFields)}

@@ -1,19 +1,24 @@
 import type { Project } from "../types/project";
 
-/**
- * Normalize project status from backend format (ON_HOLD) to frontend format (ONHOLD)
- */
-export const normalizeProjectStatus = (project: Project): Project => {
-  if (project.project_status === "ON_HOLD") {
-    return { ...project, project_status: "ONHOLD" as Project["project_status"] };
-  }
-  return project;
+/** Backend may return ON_HOLD; frontend uses ONHOLD */
+type ProjectWithBackendStatus = Omit<Project, "project_status"> & {
+  project_status: Project["project_status"] | "ON_HOLD";
 };
 
 /**
- * Normalize an array of projects
+ * Normalize project status from backend format (ON_HOLD) to frontend format (ONHOLD)
  */
-export const normalizeProjects = (projects: Project[]): Project[] => {
+export const normalizeProjectStatus = (project: ProjectWithBackendStatus): Project => {
+  if (project.project_status === "ON_HOLD") {
+    return { ...project, project_status: "ONHOLD" as Project["project_status"] };
+  }
+  return project as Project;
+};
+
+/**
+ * Normalize an array of projects (backend may return ON_HOLD)
+ */
+export const normalizeProjects = (projects: ProjectWithBackendStatus[]): Project[] => {
   return projects.map(normalizeProjectStatus);
 };
 

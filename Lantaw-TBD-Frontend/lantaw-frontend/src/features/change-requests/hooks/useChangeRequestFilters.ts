@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import type { ChangeRequestFilters } from "../../../types/changeRequest";
 
-interface UseChangeRequestFiltersReturn {
+export interface UseChangeRequestFiltersReturn {
   filters: ChangeRequestFilters;
   setStatusFilter: (status: ChangeRequestFilters['status']) => void;
   setChangeTypeFilter: (changeType: ChangeRequestFilters['change_type']) => void;

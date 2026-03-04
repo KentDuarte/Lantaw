@@ -87,7 +87,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onEdit(activity, objective);
+                      onEdit?.(activity, objective);
                     }}
                     className="h-8 w-8 p-0"
                   >
@@ -98,7 +98,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDelete(activity, objective);
+                      onDelete?.(activity, objective);
                     }}
                     className="h-8 w-8 p-0"
                   >
@@ -110,7 +110,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
                     title="Add Expense Entry"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onAddExpense(activity, objective);
+                      onAddExpense?.(activity, objective);
                     }}
                   >
                     <Plus className="h-3 w-3" />

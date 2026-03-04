@@ -82,7 +82,7 @@ export const getActualExpenseSummaryByBudgetItem = (
       budgetItems.push({
         name: friendlyName,
         value: value,
-        percentage: percentage.toFixed(2),
+        percentage: Number(percentage.toFixed(2)),
       });
     }
   }
@@ -125,7 +125,7 @@ export const getBudgetItemExpenseBreakdown = (
     detailItems.push({
       name: name,
       amount: amount,
-      percentage: percentage.toFixed(2), 
+      percentage: Number(percentage.toFixed(2)),
     });
   }
 
@@ -197,8 +197,8 @@ export const getProjectedExpenseSummaryByBudgetItem = (
     return {
       name: friendlyName,
       value: value,
-      percentage: percentage.toFixed(2),
-    } as BudgetItem; 
+      percentage: Number(percentage.toFixed(2)),
+    }; 
   });
 };
 
@@ -222,9 +222,9 @@ export const groupActivitiesByBudgetItem = (
     }
     
     const detailItem: DetailItem = {
-      name: activity.title, 
+      name: activity.title,
       amount: amount,
-      percentage: '0.00', 
+      percentage: 0,
     };
 
     // Group the item
@@ -246,7 +246,7 @@ export const groupActivitiesByBudgetItem = (
       
       groupedData[categoryKey] = categoryActivities.map(item => ({
           ...item,
-          percentage: ((item.amount / divisor) * 100).toFixed(2),
+          percentage: Number(((item.amount / divisor) * 100).toFixed(2)),
       }));
   }
 

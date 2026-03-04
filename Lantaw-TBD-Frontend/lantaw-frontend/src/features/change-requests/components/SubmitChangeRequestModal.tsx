@@ -10,13 +10,6 @@ import {
 import { Button } from "../../../components/common/button";
 import { TextArea } from "../../../components/common/textarea";
 import { Label } from "../../../components/common/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../../components/common/select";
 import { AlertCircle } from "lucide-react";
 import type { ChangeRequestCreateData } from "../../../types/changeRequest";
 import { ProposedChangesPreview } from "./ProposedChangesPreview";

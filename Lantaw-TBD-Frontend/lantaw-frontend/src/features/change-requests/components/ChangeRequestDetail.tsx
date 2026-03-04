@@ -32,7 +32,7 @@ export const ChangeRequestDetail: React.FC<ChangeRequestDetailProps> = ({
   const changeTypeName = getChangeTypeDisplayName(changeRequest.change_type);
   const isProcessed = changeRequest.status !== 'PENDING';
   const isProjectStaff = user?.role === "Project Staff";
-  const isOwnRequest = user?.id === changeRequest.submitted_by;
+  const isOwnRequest = user?.id !== undefined && String(changeRequest.submitted_by) === user.id;
   const canCancel = isProjectStaff && isOwnRequest && changeRequest.status === 'PENDING';
 
   return (

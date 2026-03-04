@@ -87,7 +87,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
   setFormData,
   onSubmit,
   checkStaffExists,
-  userRole,
+  userRole: _userRole,
   error,
   initialBudgetItems,
   onBudgetItemsChange,

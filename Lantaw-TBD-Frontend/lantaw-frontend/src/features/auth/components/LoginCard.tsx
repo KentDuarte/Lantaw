@@ -5,7 +5,6 @@ import type { AuthFormData } from "../../../components/layout/AuthForm.tsx";
 import { Eye } from "lucide-react";
 import { Button } from "../../../components/common/button";
 import api from "../../../api/client";
-import { ACCESS_TOKEN, REFRESH_TOKEN } from "../../../api/constants";
 import { useAuth } from "../../../context/AuthContext";
 
 export default function LoginCard() {

@@ -63,7 +63,7 @@ interface UseActivitiesReturn {
     }
   ) => Promise<void>;
   deleteActivity: (objectiveId: number, activityId: number) => Promise<void>;
-  addExpense: (objectiveId: number, activityId: number, additionalAmount: number) => Promise<void>;
+  addExpense: (objectiveId: number, activityId: number, additionalAmount: number, description: string) => Promise<void>;
   
   // Budget item operations
   fetchBudgetItems: () => Promise<void>;

@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../../components/common/select";
-import type { Project } from "../../../../context/ProjectContext";
+import type { Project } from "../../../../types/project";
 
 interface ProjectStatusModalProps {
   isOpen: boolean;

@@ -12,6 +12,7 @@ import { Badge } from "../../../components/common/badge";
 import { formatDateTime } from "../../../utils/formatHelpers";
 import { ChangeRequestFieldsDisplay } from "../../change-requests/components/ChangeRequestFieldsDisplay";
 import type { HistoryLog } from "../../../types/historyLog";
+import type { ChangeRequest } from "../../../types/changeRequest";
 import { RotateCcw } from "lucide-react";
 
 interface HistoryLogDetailModalProps {
@@ -28,19 +29,19 @@ export const HistoryLogDetailModal: React.FC<HistoryLogDetailModalProps> = ({
   onRevert,
 }) => {
   // Convert HistoryLog to ChangeRequest-like format for reuse of ChangeRequestFieldsDisplay
-  const changeRequestLike = {
+  const changeRequestLike: ChangeRequest = {
     id: historyEntry.id,
     project: historyEntry.project,
     project_name: historyEntry.project_name,
     submitted_by: historyEntry.user,
     submitted_by_name: historyEntry.user_name,
     change_type: historyEntry.change_type,
-    operation: historyEntry.action, // Map action to operation
-    status: 'APPROVED' as const, // History entries are always "approved" (completed)
+    operation: historyEntry.action === 'REVERT' ? 'UPDATE' : historyEntry.action,
+    status: 'APPROVED',
     description: historyEntry.description,
     entity_id: historyEntry.entity_id,
-    current_state: historyEntry.old_state,
-    proposed_changes: historyEntry.new_state,
+    current_state: historyEntry.old_state ?? null,
+    proposed_changes: historyEntry.new_state ?? {},
     approved_by: historyEntry.user,
     approved_by_name: historyEntry.user_name,
     date_submitted: historyEntry.timestamp,

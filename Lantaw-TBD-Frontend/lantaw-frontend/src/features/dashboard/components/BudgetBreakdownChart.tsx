@@ -52,10 +52,12 @@ export const BudgetBreakdownChart: React.FC<BudgetBreakdownChartProps> = ({
             outerRadius={120}
             paddingAngle={3}
             dataKey="value"
-            label={({ name, percentage }) => `${name}: ${percentage}%`}
+            label={(props: { payload?: { name?: string; percentage?: number } }) =>
+              props.payload ? `${props.payload.name ?? ""}: ${props.payload.percentage ?? 0}%` : ""
+            }
             labelLine={false}
           >
-            {pieChartData.map((entry, index) => (
+            {pieChartData.map((_entry, index) => (
               <Cell
                 key={`cell-detail-${index}`}
                 fill={detailColors[index % detailColors.length]}

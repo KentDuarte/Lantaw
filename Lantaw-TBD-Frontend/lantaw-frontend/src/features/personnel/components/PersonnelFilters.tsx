@@ -69,7 +69,7 @@ export const PersonnelFilters: React.FC<PersonnelFiltersProps> = ({
               <SelectContent>
                 <SelectItem value="all">All Departments</SelectItem>
                 {departments.map((dept) => (
-                  <SelectItem key={dept.id} value={dept.id}>
+                  <SelectItem key={dept.id} value={String(dept.id)}>
                     {dept.name}
                   </SelectItem>
                 ))}

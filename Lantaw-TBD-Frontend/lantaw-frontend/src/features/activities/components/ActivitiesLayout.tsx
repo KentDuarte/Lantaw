@@ -65,7 +65,7 @@ const ActivitiesLayout = () => {
 
   // Change request state
   const [pendingChangeRequest, setPendingChangeRequest] = useState<{
-    changeType: 'OBJECTIVE';
+    changeType: 'OBJECTIVE' | 'PROJECT';
     operation: 'CREATE' | 'UPDATE' | 'DELETE';
     entityId?: number | null;
     currentState?: Record<string, any> | null;

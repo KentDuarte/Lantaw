@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useAuth } from "../../../context/AuthContext";
 
 const TokenTest: React.FC = () => {

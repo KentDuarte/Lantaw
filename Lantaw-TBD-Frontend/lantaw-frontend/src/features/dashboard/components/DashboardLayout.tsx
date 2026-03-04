@@ -115,7 +115,7 @@ const DashboardLayout = () => {
   const [isSubmitChangeRequestModalOpen, setIsSubmitChangeRequestModalOpen] = useState(false);
 
   // Editing states
-  const [editingProject, setIsEditingProject] = useState<Project | null>(null);
+  const [_editingProject, _setIsEditingProject] = useState<Project | null>(null);
   const [pendingChangeRequest, setPendingChangeRequest] = useState<{
     changeType: 'PROJECT';
     operation: 'UPDATE';

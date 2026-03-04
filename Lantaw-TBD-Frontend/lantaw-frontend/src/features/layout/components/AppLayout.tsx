@@ -40,21 +40,17 @@ import api from "../../../api/client";
 import { useProject } from "../../../context/ProjectContext";
 import { CURRENT_PROJECT } from "../../../api/constants";
 import ProjectModal from "../components/ProjectModal";
+import type { Project } from "../../../types/project";
+import { normalizeProjects } from "../../../utils/projectStatusUtils";
 
-interface Project {
-  id: number;
-  name: string;
-  project_status: "ACTIVE" | "COMPLETED" | "ONHOLD";
-}
-
-const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const AppLayout: React.FC<{ children?: React.ReactNode }> = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const { currentProject, setCurrentProject, clearProject } = useProject();
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] =
     useState(false);
-  const [createProjectError, setCreateProjectError] = useState("");
+  const [_createProjectError, setCreateProjectError] = useState("");
   const [createProjectForm, setCreateProjectForm] = useState({
     name: "",
     projectLeader: "",
@@ -169,6 +165,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         name: "",
         projectLeader: "",
         description: "",
+        duration: "",
         startDate: "",
         endDate: "",
         totalGrant: "",
@@ -228,9 +225,10 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         if (user.role === "Executive" || user.role === "Admin") {
           const response = await api.get("/api/projects/");
           // Handle paginated response (Django REST Framework returns { results: [...] })
-          projectData = Array.isArray(response.data) 
-            ? response.data 
+          const raw = Array.isArray(response.data)
+            ? response.data
             : (response.data.results || []);
+          projectData = normalizeProjects(raw);
           setProjects(projectData);
           // Clear currentProject if no projects exist
           if (projectData.length === 0) {
@@ -243,7 +241,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           const responses = await Promise.all(
             user.projects.map((id) => api.get(`/api/projects/${id}/`))
           );
-          projectData = responses.map((res) => res.data);
+          projectData = normalizeProjects(responses.map((res) => res.data));
           setProjects(projectData);
           // Clear currentProject if no projects exist
           if (projectData.length === 0) {

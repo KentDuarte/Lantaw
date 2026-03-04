@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "../../../components/common/button";
 import { Badge } from "../../../components/common/badge";
-import { Card, CardContent, CardHeader } from "../../../components/common/card";
+import { Card, CardHeader } from "../../../components/common/card";
 import { Eye, Check, X, Calendar, User, XCircle } from "lucide-react";
 import type { ChangeRequest } from "../../../types/changeRequest";
 import { getStatusStyle, getOperationStyle, getChangeTypeDisplayName } from "../utils/statusHelpers";
@@ -47,7 +47,7 @@ export const ChangeRequestCard: React.FC<ChangeRequestCardProps> = ({
   
   const isProcessed = changeRequest.status !== 'PENDING';
   const isProjectStaff = user?.role === "Project Staff";
-  const isOwnRequest = user?.id === changeRequest.submitted_by;
+  const isOwnRequest = user?.id !== undefined && String(changeRequest.submitted_by) === user.id;
   const canCancel = isProjectStaff && isOwnRequest && changeRequest.status === 'PENDING';
   const descriptionPreview = changeRequest.description.length > 150
     ? changeRequest.description.substring(0, 150) + '...'
@@ -160,10 +160,12 @@ export const ChangeRequestCard: React.FC<ChangeRequestCardProps> = ({
       const proposedExpense = Number(changeRequest.proposed_changes.actual_expense || 0);
       
       // Check if only actual_expense changed and it increased
-      const onlyExpenseChanged = Object.keys(changeRequest.proposed_changes).every(key => 
-        key === 'actual_expense' || 
-        changeRequest.proposed_changes[key] === changeRequest.current_state[key]
-      );
+      const cur = changeRequest.current_state;
+      const onlyExpenseChanged = cur
+        ? Object.keys(changeRequest.proposed_changes).every(key =>
+            key === 'actual_expense' || changeRequest.proposed_changes[key] === cur[key]
+          )
+        : false;
       
       if (onlyExpenseChanged && proposedExpense > currentExpense) {
         return 'Adding Expense Entry';

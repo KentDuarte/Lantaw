@@ -48,21 +48,19 @@ const PersonnelLayout = () => {
     addCompensation,
     updateCompensation,
     deleteCompensation,
-  } = useCompensation(currentProject?.id, personnel || null);
+  } = useCompensation(currentProject?.id ?? 0);
 
   const {
     role: roles,
     loadingRole,
     addRole,
-    error: roleError,
-  } = useRole(currentProject?.id || null);
+  } = useRole(currentProject?.id ?? 0);
 
   const {
     department: departments,
     loadingDepartment,
     addDepartment,
-    error: departmentError,
-  } = useDepartment(currentProject?.id || null);
+  } = useDepartment(currentProject?.id ?? 0);
 
   const { budgetLineItems } = useActivities(currentProject?.id || null);
 
