@@ -41,7 +41,7 @@ exceptiongroup==1.2.2
 executing==2.2.0
 fastapi==0.116.1
 filelock==3.17.0
-Flask==3.1.0
+Flask==3.0.3
 fonttools==4.55.8
 fsspec==2025.2.0
 fuzzylogic==1.2.0
