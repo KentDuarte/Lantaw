@@ -73,6 +73,25 @@ export const ExpenseComparisonChart: React.FC<ExpenseComparisonChartProps> = ({
             <Bar dataKey="actual" fill="#f45d48" name="Actual" />
           </BarChart>
         </ResponsiveContainer>
+        {/* Legend: Projected vs Actual */}
+        <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm mt-4">
+          <li className="flex items-center gap-2 shrink-0">
+            <span
+              className="h-3 w-3 rounded-full shrink-0"
+              style={{ backgroundColor: "#078080" }}
+              aria-hidden
+            />
+            <span className="text-foreground font-medium">Projected</span>
+          </li>
+          <li className="flex items-center gap-2 shrink-0">
+            <span
+              className="h-3 w-3 rounded-full shrink-0"
+              style={{ backgroundColor: "#f45d48" }}
+              aria-hidden
+            />
+            <span className="text-foreground font-medium">Actual</span>
+          </li>
+        </ul>
         <div className="mt-4 space-y-2">
           <div className="flex justify-between text-sm">
             <span>Total Grant:</span>

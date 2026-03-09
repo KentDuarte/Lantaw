@@ -24,40 +24,42 @@ export const ActivitiesHeader: React.FC<ActivitiesHeaderProps> = ({
   const statusStyle = getProjectStatusStyle(projectStatus);
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex-1">
-        <div className="flex items-center gap-4 mb-2">
-          <h1 className="text-[24px] font-bold">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-2">
+          <h1 className="text-xl sm:text-[24px] font-bold">
             Activities Management
           </h1>
           <Badge
             variant="outline"
-            className={`text-xs ${statusStyle.badge} ${userRole !== "Executive" ? "cursor-pointer hover:opacity-80" : ""}`}
+            className={`text-xs shrink-0 ${statusStyle.badge} ${userRole !== "Executive" ? "cursor-pointer hover:opacity-80" : ""}`}
             onClick={userRole !== "Executive" ? onEditProjectStatus : undefined}
           >
             <div className={`w-2 h-2 rounded-full ${statusStyle.bg} mr-2`} />
             {projectStatus.replace(/_/g, " ")}
           </Badge>
         </div>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-sm sm:text-base">
           Manage objectives and activities for {projectName}.
         </p>
       </div>
       {userRole !== "Executive" && (
-        <div className="flex gap-2">
+        <div className="flex flex-nowrap gap-2 shrink-0">
           <Button
             variant="outline"
             onClick={onEditProjectStatus}
-            className="bg-background hover:bg-muted"
+            className="bg-background hover:bg-muted shrink-0"
+            title="Edit project status"
           >
-            <Edit className="h-4 w-4 mr-2" />
+            <Edit className="h-4 w-4 mr-2 shrink-0" />
             Project Status
           </Button>
           <Button
             onClick={onAddObjective}
-            className="bg-primary hover:bg-primary/90"
+            className="bg-primary hover:bg-primary/90 shrink-0"
+            title="Add new objective"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 mr-2 shrink-0" />
             Add Objective
           </Button>
         </div>

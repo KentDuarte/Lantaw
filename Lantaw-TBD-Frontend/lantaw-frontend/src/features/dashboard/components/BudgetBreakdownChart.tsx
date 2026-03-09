@@ -42,7 +42,7 @@ export const BudgetBreakdownChart: React.FC<BudgetBreakdownChartProps> = ({
           Total: {hideFinancialValues ? "---" : `₱${totalAmount.toLocaleString()}`}
         </p>
       </div>
-      <ResponsiveContainer width="100%" height={350}>
+      <ResponsiveContainer width="100%" height={320} className="min-h-[280px] sm:min-h-[320px]">
         <PieChart>
           <Pie
             data={pieChartData}
@@ -52,10 +52,7 @@ export const BudgetBreakdownChart: React.FC<BudgetBreakdownChartProps> = ({
             outerRadius={120}
             paddingAngle={3}
             dataKey="value"
-            label={(props: { payload?: { name?: string; percentage?: number } }) =>
-              props.payload ? `${props.payload.name ?? ""}: ${props.payload.percentage ?? 0}%` : ""
-            }
-            labelLine={false}
+            label={false}
           >
             {pieChartData.map((_entry, index) => (
               <Cell
@@ -72,6 +69,23 @@ export const BudgetBreakdownChart: React.FC<BudgetBreakdownChartProps> = ({
           />
         </PieChart>
       </ResponsiveContainer>
+      {/* Legend: color dot, name, and percent */}
+      <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
+        {pieChartData.map((item, index) => (
+          <li
+            key={item.name}
+            className="flex items-center gap-2 shrink-0"
+          >
+            <span
+              className="h-3 w-3 rounded-full shrink-0"
+              style={{ backgroundColor: detailColors[index % detailColors.length] }}
+              aria-hidden
+            />
+            <span className="text-foreground font-medium">{item.name}</span>
+            <span className="text-muted-foreground">({item.percentage}%)</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };

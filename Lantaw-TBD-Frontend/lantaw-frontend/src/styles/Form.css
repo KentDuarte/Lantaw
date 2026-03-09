@@ -34,3 +34,19 @@
 .form-button:hover {
   background-color: #0056b3;
 }
+
+@media (max-width: 640px) {
+  .form-container {
+    margin: 24px auto;
+    padding: 16px;
+    max-width: 100%;
+  }
+
+  .form-input {
+    width: 100%;
+  }
+
+  .form-button {
+    width: 100%;
+  }
+}

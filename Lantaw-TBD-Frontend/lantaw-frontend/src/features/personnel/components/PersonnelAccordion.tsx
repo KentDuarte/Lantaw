@@ -71,24 +71,24 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
     >
       <Card>
         {/* Header/Trigger */}
-        <div className="flex items-center justify-between w-full px-6 py-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between w-full px-4 sm:px-6 py-4">
           <AccordionTrigger
             onClick={() => onExpand(personnel.id)}
-            className="hover:no-underline py-0 [&>svg]:hidden flex-1"
+            className="hover:no-underline py-0 [&>svg]:hidden flex-1 min-w-0 text-left"
           >
-            <div className="text-left mr-4">
-              <div className="flex items-center gap-3 mb-2">
+            <div className="mr-4 min-w-0 max-w-full">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 min-w-0">
                 <div
-                  className={`w-3 h-3 rounded-full ${getStatusMarkerColor(
+                  className={`w-3 h-3 rounded-full shrink-0 ${getStatusMarkerColor(
                     personnel.employment_status
                   )}`}
                 />
-                <CardTitle className="text-lg">
+                <CardTitle className="text-lg font-medium wrap-break-word">
                   {personnel.first_name} {personnel.last_name}
                 </CardTitle>
                 <Badge
                   variant="outline"
-                  className={`text-xs ${getStatusBadgeColor(
+                  className={`text-xs shrink-0 ${getStatusBadgeColor(
                     personnel.employment_status
                   )}`}
                 >
@@ -110,7 +110,7 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
           </AccordionTrigger>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
             {showActions && (
               <>
                 <Button
@@ -137,7 +137,7 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
                 </Button>
               </>
             )}
-            <div className="w-4 h-4 flex items-center justify-center ml-2">
+            <div className="w-4 h-4 flex items-center justify-center sm:ml-2 shrink-0">
               <AccordionTrigger />
             </div>
           </div>
@@ -184,9 +184,9 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/** Left Column: Salary */}
                 <div>
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
                     <h4 className="font-medium text-sm">Salary</h4>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
                         Total: {hideFinancialValues ? "---" : formatCurrency(getTotal(salary))}
                       </span>
@@ -233,9 +233,9 @@ export const PersonnelAccordion: React.FC<PersonnelAccordionProps> = ({
 
                 {/* Right Column: Honoraria */}
                 <div>
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
                     <h4 className="font-medium text-sm">Honoraria</h4>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">
                         Total: {hideFinancialValues ? "---" : formatCurrency(getTotal(honorariaItems))}
                       </span>

@@ -197,8 +197,8 @@ export const ChangeRequestCard: React.FC<ChangeRequestCardProps> = ({
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 space-y-2">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex-1 min-w-0 space-y-2">
             {/* Badges Row */}
             <div className="flex items-center gap-2 flex-wrap">
               {changeRequest.project_name && (
@@ -230,7 +230,7 @@ export const ChangeRequestCard: React.FC<ChangeRequestCardProps> = ({
             </div>
 
             {/* Metadata */}
-            <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <User className="h-3 w-3" />
                 {changeRequest.submitted_by_name || 'Unknown'}
@@ -280,7 +280,7 @@ export const ChangeRequestCard: React.FC<ChangeRequestCardProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 flex-shrink-0">
+          <div className="flex flex-wrap gap-2 shrink-0">
             {/* View button - always visible */}
             <Button
               variant="outline"

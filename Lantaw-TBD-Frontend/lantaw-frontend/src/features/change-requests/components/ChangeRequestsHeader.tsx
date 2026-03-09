@@ -32,10 +32,10 @@ export const ChangeRequestsHeader: React.FC<ChangeRequestsHeaderProps> = ({
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-[24px] font-bold font-[Instrument_Sans]">
+        <h1 className="text-xl sm:text-[24px] font-bold font-[Instrument_Sans]">
           Change Requests
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm sm:text-base text-muted-foreground">
           {isAdmin 
             ? "Review and manage change requests from Project Staff across all projects."
             : "View the status of your submitted change requests."}
@@ -44,17 +44,17 @@ export const ChangeRequestsHeader: React.FC<ChangeRequestsHeaderProps> = ({
 
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col lg:flex-row gap-4 justify-between">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             {/* Filters */}
-            <div className="flex gap-2 items-center flex-wrap">
-              <Filter className="h-4 w-4 text-muted-foreground" />
+            <div className="flex flex-wrap gap-2 items-center">
+              <Filter className="h-4 w-4 text-muted-foreground shrink-0 hidden sm:block" />
               
               {/* Status Filter */}
               <Select
                 value={filters.filters.status || "all"}
                 onValueChange={(value) => filters.setStatusFilter(value === "all" ? undefined : value as ChangeRequest['status'])}
               >
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-full min-w-0 sm:w-32">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -71,7 +71,7 @@ export const ChangeRequestsHeader: React.FC<ChangeRequestsHeaderProps> = ({
                 value={filters.filters.change_type || "all"}
                 onValueChange={(value) => filters.setChangeTypeFilter(value === "all" ? undefined : value as ChangeRequest['change_type'])}
               >
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full min-w-0 sm:w-40">
                   <SelectValue placeholder="Change Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -92,7 +92,7 @@ export const ChangeRequestsHeader: React.FC<ChangeRequestsHeaderProps> = ({
                 value={filters.filters.operation || "all"}
                 onValueChange={(value) => filters.setOperationFilter(value === "all" ? undefined : value as ChangeRequest['operation'])}
               >
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-full min-w-0 sm:w-32">
                   <SelectValue placeholder="Operation" />
                 </SelectTrigger>
                 <SelectContent>
@@ -109,7 +109,7 @@ export const ChangeRequestsHeader: React.FC<ChangeRequestsHeaderProps> = ({
                   value={filters.filters.project?.toString() || "all"}
                   onValueChange={(value) => filters.setProjectFilter(value === "all" ? undefined : parseInt(value))}
                 >
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-full min-w-0 sm:w-40">
                     <SelectValue placeholder="Project" />
                   </SelectTrigger>
                   <SelectContent>
@@ -127,7 +127,7 @@ export const ChangeRequestsHeader: React.FC<ChangeRequestsHeaderProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={filters.clearFilters}
-                className="text-xs"
+                className="text-xs shrink-0 w-full sm:w-auto"
               >
                 <X className="h-3 w-3 mr-1" />
                 Clear
@@ -136,7 +136,7 @@ export const ChangeRequestsHeader: React.FC<ChangeRequestsHeaderProps> = ({
 
             {/* Page Size Selector */}
             {onPageSizeChange && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <span className="text-sm text-muted-foreground whitespace-nowrap">
                   Items per page:
                 </span>

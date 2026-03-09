@@ -15,11 +15,11 @@ export default function Landing() {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       {/* Top bar with login button on the right */}
-      <header className="flex items-center justify-between px-8 py-6">
+      <header className="flex items-center justify-between px-4 sm:px-8 py-6">
         <div className="text-lg font-semibold tracking-tight">
           Lantaw
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
           <Button
             variant="outline"
             onClick={handleProjectsClick}

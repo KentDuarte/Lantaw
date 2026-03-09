@@ -14,7 +14,9 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  useSidebar,
 } from "./Sidebar";
+import { useIsMobile } from "../../../components/common/use-mobile";
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -43,9 +45,27 @@ import ProjectModal from "../components/ProjectModal";
 import type { Project } from "../../../types/project";
 import { normalizeProjects } from "../../../utils/projectStatusUtils";
 
+function MobileSidebarOverlay() {
+  const { open, setOpen } = useSidebar();
+  const isMobile = useIsMobile();
+  if (!isMobile || !open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[9] bg-black/50"
+      onClick={() => setOpen(false)}
+      aria-hidden="true"
+    />
+  );
+}
+
 const AppLayout: React.FC<{ children?: React.ReactNode }> = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  useEffect(() => {
+    setSidebarOpen(!isMobile);
+  }, [isMobile]);
   const [projects, setProjects] = useState<Project[]>([]);
   const { currentProject, setCurrentProject, clearProject } = useProject();
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] =
@@ -307,7 +327,8 @@ const AppLayout: React.FC<{ children?: React.ReactNode }> = () => {
     "Dashboard";
 
   return (
-    <SidebarProvider>
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      <MobileSidebarOverlay />
       <Sidebar>
         {/* Sidebar Header */}
         <SidebarHeader>
@@ -361,7 +382,7 @@ const AppLayout: React.FC<{ children?: React.ReactNode }> = () => {
               <SidebarGroupLabel asChild>
                 <CollapsibleTrigger className="group/collapsible w-full flex items-center justify-between p-2 text-sm font-medium hover:bg-sidebar-accent rounded-md">
                   <div className="flex items-center gap-2">
-                    <FolderOpen className="h-4 w-4 flex-shrink-0" />
+                    <FolderOpen className="h-4 w-4 shrink-0" />
                     <span className="group-data-[collapsible=icon]:hidden">
                       Projects
                     </span>
@@ -430,7 +451,7 @@ const AppLayout: React.FC<{ children?: React.ReactNode }> = () => {
                               <div
                                 className={`w-2 h-2 rounded-full ${getProjectStatusColor(
                                   project.project_status
-                                )} flex-shrink-0`}
+                                )} shrink-0`}
                               />
                               <span className="truncate group-data-[collapsible=icon]:hidden">
                                 {project.name}
@@ -449,23 +470,23 @@ const AppLayout: React.FC<{ children?: React.ReactNode }> = () => {
       </Sidebar>
 
       {/* Main Content Area */}
-      <SidebarInset>
+      <SidebarInset className="min-h-0">
         {/* Header with sidebar toggle */}
-        <header className="sticky top-0 flex h-14 items-center gap-2 border-b bg-white px-4 z-10">
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4 min-w-0">
           <SidebarTrigger />
 
           {/* Title and breadcrumb inline */}
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold">{currentPage}</h1>
-            <span className="text-muted-foreground">•</span>
-            <span className="text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <h1 className="text-lg font-semibold truncate">{currentPage}</h1>
+            <span className="text-muted-foreground shrink-0">•</span>
+            <span className="text-sm text-muted-foreground truncate">
               {currentProject?.name || "No Project Selected"}
             </span>
           </div>
         </header>
 
         {/* Main content area — page content */}
-        <main className="flex-1 p-6 bg-gray-50">
+        <main className="flex-1 min-h-0 overflow-auto p-4 sm:p-6 bg-gray-50">
           <Outlet />
         </main>
       </SidebarInset>

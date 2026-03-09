@@ -116,7 +116,7 @@ export const SubmitChangeRequestModal: React.FC<SubmitChangeRequestModalProps> =
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-[800px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{customTitle || "Submit Change Request"}</DialogTitle>
           <DialogDescription>
@@ -134,7 +134,7 @@ export const SubmitChangeRequestModal: React.FC<SubmitChangeRequestModalProps> =
           </div>
 
           <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Operation: </span>
                 <span className="font-medium">{operation}</span>

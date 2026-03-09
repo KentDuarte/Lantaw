@@ -35,7 +35,7 @@ export default function RegisterCard() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <header className="flex items-center justify-between px-8 py-6 border-b">
+      <header className="flex items-center justify-between px-4 sm:px-8 py-6 border-b">
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={() => navigate("/")}>
             Back
@@ -44,7 +44,7 @@ export default function RegisterCard() {
       </header>
 
       <main className="flex-1 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md px-4">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="p-3 rounded-xl bg-primary">

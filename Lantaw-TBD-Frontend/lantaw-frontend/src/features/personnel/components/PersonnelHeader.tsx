@@ -16,25 +16,25 @@ export const PersonnelHeader: React.FC<PersonnelHeaderProps> = ({
   userRole,
 }) => {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex-1">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex-1 min-w-0">
         <div className="flex items-center gap-4 mb-2">
-          <h1 className="text-[24px] font-bold font-[Instrument_Sans]">
+          <h1 className="text-xl sm:text-[24px] font-bold font-[Instrument_Sans]">
             Personnel Management
           </h1>
         </div>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-sm sm:text-base">
           Manage salary and honoraria records for project personnel in{" "}
           {projectName}.
         </p>
       </div>
       {userRole !== "Executive" && (
-        <div className="flex gap-2">
+        <div className="flex flex-nowrap gap-2 shrink-0">
           <Button
             onClick={onAddPersonnel}
-            className="bg-primary hover:bg-primary/90"
+            className="bg-primary hover:bg-primary/90 shrink-0"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 mr-2 shrink-0" />
             Add Personnel
           </Button>
         </div>

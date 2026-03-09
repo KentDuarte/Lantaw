@@ -56,7 +56,7 @@ const DashboardLayout = () => {
   // Show loading state while user data is being fetched
   if (authLoading) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         <div className="bg-card border border-border rounded-lg p-6">
           <p className="text-muted-foreground">Loading dashboard...</p>
         </div>
@@ -67,7 +67,7 @@ const DashboardLayout = () => {
   // Early return if no project is selected
   if (!currentProject) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         <h2 className="text-2xl font-semibold">Welcome to Lantaw Dashboard</h2>
         <div className="bg-card border border-border rounded-lg p-6">
           <p className="text-muted-foreground mb-4">
@@ -594,7 +594,7 @@ const DashboardLayout = () => {
 
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
       <DashboardHeader
         projectName={currentProject.name}
@@ -633,7 +633,13 @@ const DashboardLayout = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Pie Chart */}
+        {/* Bar Chart - left */}
+        <ExpenseComparisonChart
+          data={expenseComparisonPerBudgetItem}
+          projectSummary={expenseSummary}
+          hideFinancialValues={hideFinancialValues}
+        />
+        {/* Pie Chart - right */}
         <Card>
           <CardHeader>
             <CardTitle>
@@ -653,12 +659,6 @@ const DashboardLayout = () => {
           </CardHeader>
           <CardContent>{renderBudgetBreakdown()}</CardContent>
         </Card>
-        {/* Bar Chart */}
-        <ExpenseComparisonChart
-          data={expenseComparisonPerBudgetItem}
-          projectSummary={expenseSummary}
-          hideFinancialValues={hideFinancialValues}
-        />
       </div>
 
       {/* Objectives Summary */}

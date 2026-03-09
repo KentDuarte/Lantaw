@@ -81,7 +81,7 @@ export const ApproveChangeRequestModal: React.FC<ApproveChangeRequestModalProps>
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{getAutoTitle()}</DialogTitle>
           <DialogDescription>

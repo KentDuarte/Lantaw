@@ -69,22 +69,29 @@ export const ObjectiveAccordion: React.FC<ObjectiveAccordionProps> = ({
     >
       <Card>
         {/* Header / Trigger */}
-        <div className="flex items-center justify-between w-full px-6 py-4">
-          <AccordionTrigger
-            ref={accordionTriggerRef}
-            onClick={() => onExpand(objective.id)}
-            className="hover:no-underline py-0 [&>svg]:hidden flex-1"
-          >
-            <div className="text-left mr-4">
-              <CardTitle className="text-lg mb-1">{objective.title}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {objective.description || "No description provided."}
-              </p>
-            </div>
-          </AccordionTrigger>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full px-4 sm:px-6 py-4">
+          <div className="flex-1 min-w-0 max-w-full">
+            <AccordionTrigger
+              ref={accordionTriggerRef}
+              onClick={() => onExpand(objective.id)}
+              className="hover:no-underline py-0 [&>svg]:hidden w-full min-w-0 text-left"
+            >
+              <div className="mr-4 min-w-0 max-w-full flex-1">
+                <CardTitle
+                  className="text-lg mb-1 wrap-break-word"
+                  title={objective.title}
+                >
+                  {objective.title}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground wrap-break-word">
+                  {objective.description || "No description provided."}
+                </p>
+              </div>
+            </AccordionTrigger>
+          </div>
 
           {/* Action Buttons and Chevron - Outside of AccordionTrigger to avoid nested buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
             {showActions && (
               <>
                 <Button

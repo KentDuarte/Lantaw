@@ -16,9 +16,11 @@ export interface HistoryLog {
 
 export interface HistoryLogFilters {
   project?: number;
-  change_type?: HistoryLog['change_type'];
-  action?: HistoryLog['action'];
+  change_type?: HistoryLog["change_type"];
+  action?: HistoryLog["action"];
   user?: number;
+  date_from?: string; // YYYY-MM-DD
+  date_to?: string;   // YYYY-MM-DD
 }
 
 export interface ApiResponse<T> {

@@ -20,7 +20,7 @@ const AnalyticsLayout = () => {
   // Show loading state while user data is being fetched
   if (authLoading) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         <div className="bg-card border border-border rounded-lg p-6">
           <p className="text-muted-foreground">Loading analytics...</p>
         </div>
@@ -31,7 +31,7 @@ const AnalyticsLayout = () => {
   // Early return if no project is selected
   if (!currentProject) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         <h2 className="text-2xl font-semibold">Analytics</h2>
         <div className="bg-card border border-border rounded-lg p-6">
           <p className="text-muted-foreground mb-4">
@@ -99,7 +99,7 @@ const AnalyticsLayout = () => {
   const hideFinancialValues = false; // Executives can now view amounts
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
       <div>
         <h2 className="text-2xl font-semibold">Analytics</h2>

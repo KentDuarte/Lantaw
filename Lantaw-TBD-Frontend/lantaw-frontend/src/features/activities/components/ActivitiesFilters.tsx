@@ -26,8 +26,8 @@ export const ActivitiesFilters: React.FC<ActivitiesFiltersProps> = ({
       <CardContent className="pt-6">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search Bar */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <div className="flex-1 relative min-w-0">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Search activities..."
               value={filters.filters.searchQuery}
@@ -37,13 +37,13 @@ export const ActivitiesFilters: React.FC<ActivitiesFiltersProps> = ({
           </div>
 
           {/* Filters */}
-          <div className="flex gap-2 items-center">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+          <div className="flex flex-wrap gap-2 items-center">
+            <Filter className="h-4 w-4 text-muted-foreground shrink-0 hidden sm:block" />
             <Select
               value={filters.filters.categoryFilter}
               onValueChange={filters.setCategoryFilter}
             >
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full min-w-0 sm:w-40">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -58,7 +58,7 @@ export const ActivitiesFilters: React.FC<ActivitiesFiltersProps> = ({
               value={filters.filters.statusFilter}
               onValueChange={filters.setStatusFilter}
             >
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-full min-w-0 sm:w-32">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -73,7 +73,7 @@ export const ActivitiesFilters: React.FC<ActivitiesFiltersProps> = ({
               value={filters.filters.expenseFilter}
               onValueChange={filters.setExpenseFilter}
             >
-              <SelectTrigger className="w-36">
+              <SelectTrigger className="w-full min-w-0 sm:w-36">
                 <SelectValue placeholder="Expense" />
               </SelectTrigger>
               <SelectContent>
@@ -86,9 +86,9 @@ export const ActivitiesFilters: React.FC<ActivitiesFiltersProps> = ({
               variant="outline"
               size="sm"
               onClick={filters.clearFilters}
-              className="text-xs"
+              className="text-xs shrink-0 w-full sm:w-auto"
             >
-              <X className="h-3 w-3 mr-1" />
+              <X className="h-3 w-3 mr-1 shrink-0" />
               Clear
             </Button>
           </div>

@@ -161,7 +161,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="first_name">First Name</Label>
               <Input
@@ -209,16 +209,17 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-wrap gap-2 justify-end">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={isSubmitting}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>

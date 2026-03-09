@@ -6,6 +6,7 @@ import {
   CardContent,
 } from "../../../components/common/card";
 import { Button } from "../../../components/common/button";
+import { useIsMobile } from "../../../components/common/use-mobile";
 import {
   Collapsible,
   CollapsibleContent,
@@ -71,13 +72,22 @@ export const ActivityExpenseChart: React.FC<ActivityExpenseChartProps> = ({
   // Determine chart height based on view type and data length
   const chartHeight = viewType === "BAR" ? Math.max(300, data.length * 40) : 300;
 
+  const isMobile = useIsMobile();
+  const yAxisWidth = isMobile ? 55 : 70;
+  const barMargin = isMobile
+    ? { top: 5, right: 20, left: 5, bottom: 5 }
+    : { top: 5, right: 30, left: 5, bottom: 5 };
+  const columnMargin = isMobile
+    ? { top: 30, right: 20, left: 15, bottom: 40 }
+    : { top: 30, right: 30, left: 20, bottom: 60 };
+
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Activity Expenses</CardTitle>
           {onViewTypeChange && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant={viewType === "COLUMN" ? "default" : "outline"}
                 size="sm"
@@ -101,16 +111,13 @@ export const ActivityExpenseChart: React.FC<ActivityExpenseChartProps> = ({
         </div>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={chartHeight}>
-          <BarChart
-            data={chartData}
-            layout={viewType === "BAR" ? "vertical" : undefined}
-            margin={
-              viewType === "BAR"
-                ? { top: 5, right: 30, left: 100, bottom: 5 }
-                : { top: 30, right: 30, left: 20, bottom: 60 }
-            }
-          >
+        <div className="overflow-visible">
+          <ResponsiveContainer width="100%" height={chartHeight}>
+            <BarChart
+              data={chartData}
+              layout={viewType === "BAR" ? "vertical" : undefined}
+              margin={viewType === "BAR" ? barMargin : columnMargin}
+            >
             <CartesianGrid strokeDasharray="3 3" />
             {viewType === "COLUMN" ? (
               <>
@@ -141,7 +148,7 @@ export const ActivityExpenseChart: React.FC<ActivityExpenseChartProps> = ({
                   type="category"
                   dataKey="displayName"
                   fontSize={12}
-                  width={90}
+                  width={yAxisWidth}
                 />
               </>
             )}
@@ -156,6 +163,11 @@ export const ActivityExpenseChart: React.FC<ActivityExpenseChartProps> = ({
                 return fullName;
               }}
               labelStyle={{ color: "#000" }}
+              contentStyle={{
+                maxWidth: "min(90vw, 280px)",
+                wordBreak: "break-word",
+              }}
+              wrapperStyle={{ zIndex: 50 }}
             />
             <Bar
               dataKey="projected"
@@ -166,6 +178,7 @@ export const ActivityExpenseChart: React.FC<ActivityExpenseChartProps> = ({
             <Bar dataKey="actual" fill="#f45d48" name="Actual" />
           </BarChart>
         </ResponsiveContainer>
+        </div>
         <div className="mt-4 space-y-2">
           <div className="flex justify-between text-sm">
             <span>Total Projected:</span>
@@ -214,7 +227,7 @@ export const ActivityExpenseChart: React.FC<ActivityExpenseChartProps> = ({
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2">
-              <div className="space-y-1 max-h-60 overflow-y-auto">
+              <div className="space-y-1 max-h-60 overflow-y-auto min-w-0">
                 {data.map((item, index) => {
                   const status = getBudgetStatus(
                     item.projected,
@@ -224,12 +237,12 @@ export const ActivityExpenseChart: React.FC<ActivityExpenseChartProps> = ({
                   return (
                     <div
                       key={`${item.activityName}-${index}`}
-                      className="flex justify-between items-center text-xs"
+                      className="flex justify-between items-center text-xs min-w-0 gap-2"
                     >
-                      <span className="truncate mr-2" title={item.activityName}>
+                      <span className="truncate min-w-0" title={item.activityName}>
                         {item.activityName}:
                       </span>
-                      <span className={`font-medium ${status.color} flex-shrink-0`}>
+                      <span className={`font-medium ${status.color} shrink-0`}>
                         {status.text}
                       </span>
                     </div>

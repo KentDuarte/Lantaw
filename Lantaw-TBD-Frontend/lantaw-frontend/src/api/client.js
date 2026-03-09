@@ -74,7 +74,7 @@ api.interceptors.response.use(
                 processQueue(error, null);
                 isRefreshing = false;
                 // Redirect to login or clear auth state
-                window.location.href = '/login';
+                window.location.href = (import.meta.env.BASE_URL || '/').replace(/\/$/, '') + '/login';
                 return Promise.reject(error);
             }
 
@@ -108,7 +108,7 @@ api.interceptors.response.use(
                 // Clear tokens and redirect to login
                 localStorage.removeItem(ACCESS_TOKEN);
                 localStorage.removeItem(REFRESH_TOKEN);
-                window.location.href = '/login';
+                window.location.href = (import.meta.env.BASE_URL || '/').replace(/\/$/, '') + '/login';
                 return Promise.reject(refreshError);
             }
         }

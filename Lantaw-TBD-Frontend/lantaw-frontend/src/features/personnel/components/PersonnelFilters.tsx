@@ -29,8 +29,8 @@ export const PersonnelFilters: React.FC<PersonnelFiltersProps> = ({
       <CardContent className="pt-6">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search Bar */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <div className="flex-1 relative min-w-0">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Search personnel..."
               value={filters.filters.searchQuery}
@@ -40,14 +40,14 @@ export const PersonnelFilters: React.FC<PersonnelFiltersProps> = ({
           </div>
 
           {/* Filters */}
-          <div className="flex gap-2 items-center">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+          <div className="flex flex-wrap gap-2 items-center">
+            <Filter className="h-4 w-4 text-muted-foreground shrink-0 hidden sm:block" />
             {/* Employment Status */}
             <Select
               value={filters.filters.employmentStatusFilter}
               onValueChange={filters.setEmploymentStatusFilter}
             >
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full min-w-0 sm:w-48">
                 <SelectValue placeholder="Employment Status" />
               </SelectTrigger>
               <SelectContent>
@@ -63,7 +63,7 @@ export const PersonnelFilters: React.FC<PersonnelFiltersProps> = ({
               value={filters.filters.departmentFilter}
               onValueChange={filters.setDepartmentFilter}
             >
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full min-w-0 sm:w-48">
                 <SelectValue placeholder="Department" />
               </SelectTrigger>
               <SelectContent>
@@ -81,9 +81,9 @@ export const PersonnelFilters: React.FC<PersonnelFiltersProps> = ({
               variant="outline"
               size="sm"
               onClick={filters.clearFilters}
-              className="text-xs"
+              className="text-xs shrink-0 w-full sm:w-auto"
             >
-              <X className="h-3 w-3 mr-1" />
+              <X className="h-3 w-3 mr-1 shrink-0" />
               Clear
             </Button>
           </div>

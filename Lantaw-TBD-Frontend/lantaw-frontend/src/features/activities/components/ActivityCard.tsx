@@ -50,20 +50,25 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
     <div className="border rounded-lg bg-background overflow-hidden shadow-sm">
       <div className="flex">
         {/* Color Bar */}
-        <div className={`w-2 ${activityStyles.bg} flex-shrink-0`}></div>
+        <div className={`w-2 ${activityStyles.bg} shrink-0`}></div>
 
         <div className="flex-1 p-4">
           <div className="space-y-3">
             {/* Activity Header */}
-            <div className="flex items-start justify-between">
-              <div className="space-y-1 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="space-y-1 flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
                   <div
-                    className={`px-2 py-1 rounded text-xs font-medium border ${activityStyles.badge}`}
+                    className={`px-2 py-1 rounded text-xs font-medium border shrink-0 ${activityStyles.badge}`}
                   >
                     {activity.activity_status}
                   </div>
-                  <h4 className="font-medium">{activity.title}</h4>
+                  <h4
+                    className="font-medium line-clamp-2 min-w-0 wrap-break-word"
+                    title={activity.title}
+                  >
+                    {activity.title}
+                  </h4>
                   <Badge
                     variant="outline"
                     className={`text-xs ${getBudgetBadgeColor(
@@ -81,7 +86,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
                 </div>
               </div>
               {showActions && (
-                <div className="flex gap-1">
+                <div className="flex flex-wrap gap-1 shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"

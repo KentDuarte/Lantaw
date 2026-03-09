@@ -142,7 +142,7 @@ export const AddPersonnelModal: React.FC<AddPersonnelModalProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="personnel-first-name" className="mb-2">
                 First Name
@@ -179,7 +179,7 @@ export const AddPersonnelModal: React.FC<AddPersonnelModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Role */}
             <CreatableSelect
               label="Role"

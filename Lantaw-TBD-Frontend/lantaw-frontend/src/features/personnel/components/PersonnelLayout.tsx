@@ -650,14 +650,14 @@ const PersonnelLayout = () => {
 
   if (!currentProject) {
     return (
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <p className="text-muted-foreground">No project selected.</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
       <PersonnelHeader
         projectName={currentProject.name}

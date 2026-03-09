@@ -668,7 +668,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-6xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           {/* Conditional Title */}
           <DialogTitle>{modalTitle}</DialogTitle>
@@ -687,7 +687,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
 
         <div className="space-y-3 overflow-y-auto flex-1 min-h-0 pr-1">
           {/* Project Leader and Project Name */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="create-project-leader" className="mb-2">
                 Project Leader
@@ -778,7 +778,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
           </div>
 
           {/* Dates */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="create-project-start-date" className="mb-2">
                 Start Date
@@ -827,8 +827,8 @@ const ProjectModal: React.FC<ProjectModalProps> = ({
           {!hideFinancialValues && (
             <div>
               <Label className="mb-2">Budget Breakdown</Label>
-              <div className="border rounded-md overflow-hidden">
-                <table className="w-full">
+              <div className="border rounded-md overflow-x-auto [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-muted">
+                <table className="w-full min-w-[500px]">
                   <thead className="bg-muted">
                     <tr>
                       <th className="px-4 py-3 text-left text-sm font-semibold w-1/3">Category</th>

@@ -27,7 +27,7 @@ function App() {
   return (
     <AuthProvider>
       <ProjectProvider>
-        <BrowserRouter>
+        <BrowserRouter basename="/Lantaw">
           <Routes>
             {/* Public routes */}
             <Route path="/landing" element={<Landing />} />

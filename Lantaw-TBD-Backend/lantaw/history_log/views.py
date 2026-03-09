@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from django.db import transaction
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 
 from .models import HistoryLog
 from .serializers import HistoryLogSerializer
@@ -43,6 +44,18 @@ class HistoryLogViewSet(viewsets.ReadOnlyModelViewSet):
         user_filter = self.request.query_params.get('user', None)
         if user_filter:
             qs = qs.filter(user_id=user_filter)
+        
+        date_from = self.request.query_params.get('date_from', None)
+        if date_from:
+            parsed = parse_date(date_from)
+            if parsed:
+                qs = qs.filter(timestamp__date__gte=parsed)
+        
+        date_to = self.request.query_params.get('date_to', None)
+        if date_to:
+            parsed = parse_date(date_to)
+            if parsed:
+                qs = qs.filter(timestamp__date__lte=parsed)
         
         # For Project Staff, only show entries for their projects
         if user.is_authenticated and hasattr(user, 'role') and user.role == "PROJECT_STAFF":

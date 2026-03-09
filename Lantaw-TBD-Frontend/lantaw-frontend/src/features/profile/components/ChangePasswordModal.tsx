@@ -275,16 +275,17 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
             )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-wrap gap-2 justify-end">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={isSubmitting}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting ? "Changing..." : "Change Password"}
             </Button>
           </DialogFooter>

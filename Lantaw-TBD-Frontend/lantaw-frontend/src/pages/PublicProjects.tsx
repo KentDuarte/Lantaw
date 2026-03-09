@@ -237,8 +237,8 @@ export default function PublicProjects() {
           )}
 
           {!loading && !error && filteredProjects.length > 0 && (
-            <div className="rounded-md border bg-card overflow-hidden">
-              <table className="w-full">
+            <div className="overflow-x-auto rounded-md border bg-card [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-muted">
+              <table className="w-full min-w-[500px]">
                 <thead className="bg-muted">
                   <tr>
                     <th className="px-4 py-3 text-left text-sm font-semibold">NAME</th>

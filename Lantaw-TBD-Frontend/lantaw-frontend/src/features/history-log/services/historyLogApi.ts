@@ -41,10 +41,12 @@ export const historyLogApi = {
   // Fetch all history log entries (with optional filters)
   getAll: async (filters?: HistoryLogFilters): Promise<HistoryLog[]> => {
     const params = new URLSearchParams();
-    if (filters?.project) params.append('project', filters.project.toString());
-    if (filters?.change_type) params.append('change_type', filters.change_type);
-    if (filters?.action) params.append('action', filters.action);
-    if (filters?.user) params.append('user', filters.user.toString());
+    if (filters?.project) params.append("project", filters.project.toString());
+    if (filters?.change_type) params.append("change_type", filters.change_type);
+    if (filters?.action) params.append("action", filters.action);
+    if (filters?.user) params.append("user", filters.user.toString());
+    if (filters?.date_from) params.append("date_from", filters.date_from);
+    if (filters?.date_to) params.append("date_to", filters.date_to);
     
     const queryString = params.toString();
     const url = `/api/history-log/${queryString ? `?${queryString}` : ''}`;
