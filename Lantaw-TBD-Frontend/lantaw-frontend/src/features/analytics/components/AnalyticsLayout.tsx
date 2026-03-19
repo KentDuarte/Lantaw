@@ -1,10 +1,19 @@
 import { useState, useMemo, useEffect } from "react";
+import { Filter } from "lucide-react";
 import { useProject } from "../../../context/ProjectContext";
 import { useAuth } from "../../../context/AuthContext";
 import { useActivities } from "../../activities/hooks/useActivities";
 import { Card, CardHeader, CardTitle, CardContent } from "../../../components/common/card";
 import { AnalyticsFiltersComponent } from "./AnalyticsFilters";
 import { ActivityExpenseChart } from "./ActivityExpenseChart";
+import { Button } from "../../../components/common/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../../../components/common/dialog";
 import {
   filterActivitiesByCategory,
   filterActivitiesByDateRange,
@@ -73,6 +82,9 @@ const AnalyticsLayout = () => {
   // Chart view type state
   const [chartViewType, setChartViewType] = useState<ChartViewType>("COLUMN");
 
+  // Mobile filters modal
+  const [filtersModalOpen, setFiltersModalOpen] = useState(false);
+
   // Apply filters to activities
   const filteredActivities = useMemo(() => {
     let filtered = allActivities;
@@ -101,15 +113,43 @@ const AnalyticsLayout = () => {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-semibold">Analytics</h2>
-        <p className="text-sm text-muted-foreground">
-          Track and analyze expenses by activities with advanced filtering
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold">Analytics</h2>
+          <p className="text-sm text-muted-foreground">
+            Track and analyze expenses by activities with advanced filtering
+          </p>
+        </div>
+
+        {/* Mobile filter modal trigger */}
+        <div className="sm:hidden">
+          <Dialog
+            open={filtersModalOpen}
+            onOpenChange={setFiltersModalOpen}
+          >
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="size-4" />
+                <span>Filter</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Filter</DialogTitle>
+              </DialogHeader>
+              <div className="pt-2">
+                <AnalyticsFiltersComponent
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="hidden sm:flex">
         <CardHeader>
           <CardTitle>Filters</CardTitle>
         </CardHeader>

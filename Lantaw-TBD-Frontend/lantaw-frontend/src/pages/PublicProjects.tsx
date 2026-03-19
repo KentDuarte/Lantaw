@@ -193,6 +193,23 @@ export default function PublicProjects() {
     setSelectedProject(null);
   };
 
+  const getStatusStyle = (status: ActivityStatus | undefined) => {
+    if (!status || status === "Unknown") {
+      return "text-muted-foreground";
+    }
+
+    switch (status) {
+      case "Active":
+        return "text-green-600 font-medium";
+      case "Completed":
+        return "text-blue-600 font-medium";
+      case "Inactive":
+        return "text-gray-600";
+      default:
+        return "text-muted-foreground";
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <header className="flex items-center justify-between px-8 py-6 border-b">
@@ -237,45 +254,30 @@ export default function PublicProjects() {
           )}
 
           {!loading && !error && filteredProjects.length > 0 && (
-            <div className="overflow-x-auto rounded-md border bg-card [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-muted">
-              <table className="w-full min-w-[500px]">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">NAME</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">ACTIVITIES</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">LEADER</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProjects.map((project) => {
-                    const status = activityStatuses[project.id];
-                    const getStatusStyle = (status: ActivityStatus | undefined) => {
-                      if (!status || status === "Unknown") {
-                        return "text-muted-foreground";
-                      }
-                      switch (status) {
-                        case "Active":
-                          return "text-green-600 font-medium";
-                        case "Completed":
-                          return "text-blue-600 font-medium";
-                        case "Inactive":
-                          return "text-gray-600";
-                        default:
-                          return "text-muted-foreground";
-                      }
-                    };
+            <div className="w-full">
+              {/* Mobile: stacked cards */}
+              <div className="sm:hidden space-y-3">
+                {filteredProjects.map((project) => {
+                  const status = activityStatuses[project.id];
 
-                    return (
-                      <tr key={project.id} className="border-t">
-                        <td className="px-4 py-3 text-sm">
-                          <button
-                            onClick={() => handleProjectClick(project)}
-                            className="text-left hover:underline cursor-pointer font-medium text-primary"
-                          >
-                            {project.name}
-                          </button>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
+                  return (
+                    <div
+                      key={project.id}
+                      className="rounded-md border bg-card p-4"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleProjectClick(project)}
+                        className="text-left font-medium text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded"
+                      >
+                        {project.name}
+                      </button>
+
+                      <div className="mt-3 flex items-center justify-between gap-4">
+                        <div className="text-sm text-muted-foreground">
+                          Activities
+                        </div>
+                        <div className="text-sm">
                           {loadingActivities ? (
                             <span className="text-muted-foreground">Loading...</span>
                           ) : (
@@ -283,15 +285,68 @@ export default function PublicProjects() {
                               {status || "-"}
                             </span>
                           )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">
-                          {project.project_leader || '-'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground mr-1">
+                          Leader:
+                        </span>
+                        {project.project_leader || "-"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden sm:block overflow-x-auto rounded-md border bg-card [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-muted">
+                <table className="w-full min-w-[500px]">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">
+                        NAME
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">
+                        ACTIVITIES
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">
+                        LEADER
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredProjects.map((project) => {
+                      const status = activityStatuses[project.id];
+
+                      return (
+                        <tr key={project.id} className="border-t">
+                          <td className="px-4 py-3 text-sm">
+                            <button
+                              onClick={() => handleProjectClick(project)}
+                              className="text-left hover:underline cursor-pointer font-medium text-primary"
+                            >
+                              {project.name}
+                            </button>
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {loadingActivities ? (
+                              <span className="text-muted-foreground">Loading...</span>
+                            ) : (
+                              <span className={getStatusStyle(status)}>
+                                {status || "-"}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {project.project_leader || "-"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
