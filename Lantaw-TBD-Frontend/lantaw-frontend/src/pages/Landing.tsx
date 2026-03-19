@@ -301,6 +301,7 @@ function RotatingCrossfadeImage({
 
 export default function Landing() {
   const navigate = useNavigate();
+  type DeviceView = "all" | "mobile" | "desktop";
 
   const handleLoginClick = () => navigate("/login");
   const handleProjectsClick = () => navigate("/projects");
@@ -313,6 +314,17 @@ export default function Landing() {
 
   const featuresSectionRef = useRef<HTMLElement | null>(null);
   const [hasRevealedFeatures, setHasRevealedFeatures] = useState(false);
+  const [hasFinishedHeroIntro, setHasFinishedHeroIntro] = useState(false);
+  const [selectedDeviceView, setSelectedDeviceView] = useState<DeviceView>("all");
+  const [renderedDeviceView, setRenderedDeviceView] = useState<DeviceView>("all");
+  const [isSwitchingDeviceView, setIsSwitchingDeviceView] = useState(false);
+  const [animatedDeviceHeight, setAnimatedDeviceHeight] = useState<number | null>(
+    null,
+  );
+  const [isHeightAnimating, setIsHeightAnimating] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const deviceContentRef = useRef<HTMLDivElement | null>(null);
+  const previousDeviceContentHeightRef = useRef<number | null>(null);
 
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   useEffect(() => {
@@ -332,7 +344,81 @@ export default function Landing() {
     return () => mediaQuery.removeListener(update);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mobileQuery = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobileViewport(mobileQuery.matches);
+    update();
+
+    if (typeof mobileQuery.addEventListener === "function") {
+      mobileQuery.addEventListener("change", update);
+      return () => mobileQuery.removeEventListener("change", update);
+    }
+
+    mobileQuery.addListener(update);
+    return () => mobileQuery.removeListener(update);
+  }, []);
+
   const ROTATE_INTERVAL_MS = 4500;
+  const HERO_ANIMATION_FINISH_MS = 900;
+  const DEVICE_SWITCH_MS = 120;
+  const effectiveDeviceView: Exclude<DeviceView, "all"> | "all" =
+    isMobileViewport && selectedDeviceView === "all" ? "mobile" : selectedDeviceView;
+  const canShowDevices = hasRevealedWhat && hasFinishedHeroIntro;
+  const showMobile = renderedDeviceView !== "desktop";
+  const showDesktop = renderedDeviceView !== "mobile";
+
+  useEffect(() => {
+    if (effectiveDeviceView === renderedDeviceView) return;
+    if (prefersReducedMotion) {
+      setRenderedDeviceView(effectiveDeviceView);
+      setIsSwitchingDeviceView(false);
+      return;
+    }
+
+    previousDeviceContentHeightRef.current =
+      deviceContentRef.current?.offsetHeight ?? null;
+    setIsSwitchingDeviceView(true);
+    const swapTimer = window.setTimeout(() => {
+      setRenderedDeviceView(effectiveDeviceView);
+      window.requestAnimationFrame(() => {
+        setIsSwitchingDeviceView(false);
+      });
+    }, DEVICE_SWITCH_MS);
+
+    return () => {
+      window.clearTimeout(swapTimer);
+    };
+  }, [effectiveDeviceView, renderedDeviceView, prefersReducedMotion]);
+
+  useEffect(() => {
+    if (!canShowDevices) return;
+    if (!deviceContentRef.current) return;
+
+    const toHeight = deviceContentRef.current.offsetHeight;
+    if (!toHeight) return;
+
+    // Apply measured height animation only on mobile.
+    if (!isMobileViewport || prefersReducedMotion) {
+      setAnimatedDeviceHeight(null);
+      setIsHeightAnimating(false);
+      previousDeviceContentHeightRef.current = null;
+      return;
+    }
+
+    const fromHeight = previousDeviceContentHeightRef.current ?? toHeight;
+    setIsHeightAnimating(true);
+    setAnimatedDeviceHeight(fromHeight);
+
+    const rafId = window.requestAnimationFrame(() => {
+      setAnimatedDeviceHeight(toHeight);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [canShowDevices, renderedDeviceView, isMobileViewport, prefersReducedMotion]);
 
   const macbookSlides = useMemo(
     () => [
@@ -399,6 +485,20 @@ export default function Landing() {
   }, []);
 
   useEffect(() => {
+    if (!hasRevealedHero) return;
+    if (prefersReducedMotion) {
+      setHasFinishedHeroIntro(true);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setHasFinishedHeroIntro(true);
+    }, HERO_ANIMATION_FINISH_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [hasRevealedHero, prefersReducedMotion]);
+
+  useEffect(() => {
     if (!featuresSectionRef.current) return;
 
     const el = featuresSectionRef.current;
@@ -446,10 +546,9 @@ export default function Landing() {
         className="relative flex-1 flex flex-col items-center justify-center px-4 py-12 overflow-hidden"
       >
         <DecorativeWaves />
-        <div className="relative text-center max-w-7xl mx-auto flex flex-col lg:flex-row items-center lg:items-center gap-10">
+        <div className="relative text-center max-w-4xl mx-auto">
           <div
             className={[
-              "flex-1",
               "transition-all duration-700 ease-out delay-150",
               hasRevealedHero
                 ? "opacity-100 translate-y-0"
@@ -464,24 +563,6 @@ export default function Landing() {
               Project visibility and team coordination in one place. Plan, track,
               and deliver with clarity.
             </p>
-          </div>
-
-          <div
-            className={[
-              "flex-1 w-full flex justify-center lg:justify-center",
-              "transition-all duration-700 ease-out",
-              hasRevealedHero ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2",
-              "motion-reduce:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-none",
-            ].join(" ")}
-          >
-            <RotatingCrossfadeImage
-              slides={macbookSlides}
-              startWhen={hasRevealedHero}
-              reducedMotion={prefersReducedMotion}
-              alt="Lantaw app preview"
-              className="w-full max-w-6xl lg:max-w-7xl h-auto rounded-md"
-              intervalMs={ROTATE_INTERVAL_MS}
-            />
           </div>
         </div>
       </main>
@@ -517,49 +598,124 @@ export default function Landing() {
             />
           </svg>
         </div>
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center md:items-center gap-10">
-          {/* Left: iPhone preview */}
+        <div className="max-w-7xl mx-auto">
           <div
             className={[
-              "w-full md:w-1/2 flex justify-center md:justify-center order-2 md:order-1",
-              "transition-all duration-700 ease-out",
-              hasRevealedWhat ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2",
-              // Respect reduced motion preferences
-              "motion-reduce:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-none",
+              "overflow-hidden",
+              isMobileViewport ? "transition-[height] duration-300 ease-out" : "",
+              "motion-reduce:transition-none",
             ].join(" ")}
+            style={{
+              height:
+                isMobileViewport && animatedDeviceHeight !== null
+                  ? `${animatedDeviceHeight}px`
+                  : undefined,
+            }}
+            onTransitionEnd={(event) => {
+              if (event.propertyName !== "height") return;
+              if (!isHeightAnimating) return;
+              setIsHeightAnimating(false);
+              setAnimatedDeviceHeight(null);
+              previousDeviceContentHeightRef.current = null;
+            }}
           >
-            <RotatingCrossfadeImage
-              slides={iPhoneSlides}
-              startWhen={hasRevealedWhat}
-              reducedMotion={prefersReducedMotion}
-              alt="Lantaw mobile preview"
-              className="w-full max-w-64 h-auto rounded-md"
-              intervalMs={ROTATE_INTERVAL_MS}
-            />
+            <div
+              ref={deviceContentRef}
+              className={[
+                "w-full gap-8 md:gap-10 items-center md:min-h-[640px]",
+                showMobile && showDesktop
+                  ? "grid grid-cols-1 md:grid-cols-[0.8fr_1.2fr]"
+                  : "grid grid-cols-1 place-items-center",
+                "origin-center transition-all duration-300 ease-out",
+                canShowDevices
+                  ? isSwitchingDeviceView
+                    ? isMobileViewport
+                      ? "opacity-85 translate-y-1 scale-[0.985]"
+                      : "opacity-95 translate-y-1"
+                    : "opacity-100 translate-y-0 scale-100"
+                  : "opacity-0 translate-y-2",
+                "motion-reduce:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-none",
+              ].join(" ")}
+            >
+              {showMobile ? (
+                <div className="flex flex-col items-center gap-3">
+                  <p className="text-sm md:text-base font-semibold text-primary-foreground/90">
+                    Lantaw on Mobile
+                  </p>
+                  <RotatingCrossfadeImage
+                    slides={iPhoneSlides}
+                    startWhen={canShowDevices}
+                    reducedMotion={prefersReducedMotion}
+                    alt="Lantaw mobile preview"
+                    className="w-full max-w-64 h-auto rounded-md"
+                    intervalMs={ROTATE_INTERVAL_MS}
+                  />
+                </div>
+              ) : null}
+              {showDesktop ? (
+                <div className="flex flex-col items-center gap-3">
+                  <p className="text-sm md:text-base font-semibold text-primary-foreground/90 text-center">
+                    Lantaw on Desktop
+                  </p>
+                  <RotatingCrossfadeImage
+                    slides={macbookSlides}
+                    startWhen={canShowDevices}
+                    reducedMotion={prefersReducedMotion}
+                    alt="Lantaw app preview"
+                    className={`w-full h-auto rounded-md ${
+                      showDesktop && !showMobile ? "max-w-5xl" : "max-w-4xl"
+                    }`}
+                    intervalMs={ROTATE_INTERVAL_MS}
+                  />
+                </div>
+              ) : null}
+            </div>
           </div>
-
-          {/* Right: text */}
-          <div
-            className={[
-              "w-full md:w-1/2 text-center md:text-left order-1 md:order-2 md:self-stretch flex flex-col justify-center",
-              "rounded-xl px-6 py-8 md:px-8 md:py-10 bg-primary-foreground/5",
-              "transition-all duration-700 ease-out delay-150",
-              hasRevealedWhat
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 -translate-y-6",
-              // Respect reduced motion preferences
-              "motion-reduce:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-none",
-            ].join(" ")}
-          >
-            <h2 className="text-2xl md:text-3xl font-bold mb-4 text-primary-foreground">
-              What is Lantaw?
-            </h2>
-            <p className="text-primary-foreground/90 leading-relaxed">
-              Lantaw helps teams and organizations keep projects on track.
-              From activities and personnel to analytics and change requests,
-              you get a single view of progress and clear accountability so
-              everyone knows what’s done and what’s next.
-            </p>
+          <div className="mt-8 flex justify-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary-foreground/30 bg-primary-foreground/10 p-1.5">
+              <button
+                type="button"
+                onClick={() => setSelectedDeviceView("all")}
+                className={[
+                  "hidden md:inline-flex px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ease-out",
+                  "hover:-translate-y-px active:scale-[0.98]",
+                  "motion-reduce:transition-none motion-reduce:transform-none",
+                  selectedDeviceView === "all"
+                    ? "bg-primary-foreground text-primary shadow-sm"
+                    : "text-primary-foreground/90 hover:bg-primary-foreground/15",
+                ].join(" ")}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedDeviceView("mobile")}
+                className={[
+                  "px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ease-out",
+                  "hover:-translate-y-px active:scale-[0.98]",
+                  "motion-reduce:transition-none motion-reduce:transform-none",
+                  selectedDeviceView === "mobile"
+                    ? "bg-primary-foreground text-primary shadow-sm"
+                    : "text-primary-foreground/90 hover:bg-primary-foreground/15",
+                ].join(" ")}
+              >
+                Mobile
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedDeviceView("desktop")}
+                className={[
+                  "px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ease-out",
+                  "hover:-translate-y-px active:scale-[0.98]",
+                  "motion-reduce:transition-none motion-reduce:transform-none",
+                  selectedDeviceView === "desktop"
+                    ? "bg-primary-foreground text-primary shadow-sm"
+                    : "text-primary-foreground/90 hover:bg-primary-foreground/15",
+                ].join(" ")}
+              >
+                Desktop
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -569,65 +725,84 @@ export default function Landing() {
         ref={featuresSectionRef}
         className="px-4 sm:px-8 py-16 md:py-24 bg-muted/50"
       >
-        <div
-          className={[
-            "max-w-4xl mx-auto",
-            "transition-all duration-700 ease-out delay-200",
-            hasRevealedFeatures ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
-            "motion-reduce:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-none",
-          ].join(" ")}
-        >
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
-            Why Lantaw?
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
-            <div className="rounded-lg bg-card p-6 border border-border shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-md bg-primary/10 text-primary">
-                  <LayoutDashboard className="size-5" />
+        <div className="max-w-4xl mx-auto">
+          <div
+            className={[
+              "text-center mb-8 md:mb-10",
+              "transition-all duration-700 ease-out",
+              hasRevealedFeatures ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
+              "motion-reduce:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-none",
+            ].join(" ")}
+          >
+            <h2 className="text-2xl md:text-3xl font-bold mb-4">
+              What is Lantaw?
+            </h2>
+            <p className="text-muted-foreground leading-relaxed max-w-3xl mx-auto">
+              Lantaw helps teams and organizations keep projects on track.
+              From activities and personnel to analytics and change requests,
+              you get a single view of progress and clear accountability so
+              everyone knows what’s done and what’s next.
+            </p>
+          </div>
+          <div
+            className={[
+              "transition-all duration-700 ease-out delay-250",
+              hasRevealedFeatures ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
+              "motion-reduce:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-none",
+            ].join(" ")}
+          >
+            <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
+              Why Lantaw?
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
+              <div className="rounded-lg bg-card p-6 border border-border shadow-sm">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-md bg-primary/10 text-primary">
+                    <LayoutDashboard className="size-5" />
+                  </div>
+                  <h3 className="text-lg font-semibold">Dashboard overview</h3>
                 </div>
-                <h3 className="text-lg font-semibold">Dashboard overview</h3>
+                <p className="text-muted-foreground text-sm">
+                  See project status at a glance. One place for key metrics and
+                  recent activity.
+                </p>
               </div>
-              <p className="text-muted-foreground text-sm">
-                See project status at a glance. One place for key metrics and
-                recent activity.
-              </p>
-            </div>
-            <div className="rounded-lg bg-card p-6 border border-border shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-md bg-primary/10 text-primary">
-                  <ClipboardList className="size-5" />
+              <div className="rounded-lg bg-card p-6 border border-border shadow-sm">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-md bg-primary/10 text-primary">
+                    <ClipboardList className="size-5" />
+                  </div>
+                  <h3 className="text-lg font-semibold">Activities & tasks</h3>
                 </div>
-                <h3 className="text-lg font-semibold">Activities & tasks</h3>
+                <p className="text-muted-foreground text-sm">
+                  Track activities, assign owners, and manage change requests in a
+                  structured workflow.
+                </p>
               </div>
-              <p className="text-muted-foreground text-sm">
-                Track activities, assign owners, and manage change requests in a
-                structured workflow.
-              </p>
-            </div>
-            <div className="rounded-lg bg-card p-6 border border-border shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-md bg-primary/10 text-primary">
-                  <Users className="size-5" />
+              <div className="rounded-lg bg-card p-6 border border-border shadow-sm">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-md bg-primary/10 text-primary">
+                    <Users className="size-5" />
+                  </div>
+                  <h3 className="text-lg font-semibold">Personnel</h3>
                 </div>
-                <h3 className="text-lg font-semibold">Personnel</h3>
+                <p className="text-muted-foreground text-sm">
+                  Manage team members and roles. Keep roles and access aligned with
+                  your structure.
+                </p>
               </div>
-              <p className="text-muted-foreground text-sm">
-                Manage team members and roles. Keep roles and access aligned with
-                your structure.
-              </p>
-            </div>
-            <div className="rounded-lg bg-card p-6 border border-border shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-md bg-primary/10 text-primary">
-                  <BarChart3 className="size-5" />
+              <div className="rounded-lg bg-card p-6 border border-border shadow-sm">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-md bg-primary/10 text-primary">
+                    <BarChart3 className="size-5" />
+                  </div>
+                  <h3 className="text-lg font-semibold">Analytics & history</h3>
                 </div>
-                <h3 className="text-lg font-semibold">Analytics & history</h3>
+                <p className="text-muted-foreground text-sm">
+                  Visualize progress with charts and review a full history log for
+                  audit and transparency.
+                </p>
               </div>
-              <p className="text-muted-foreground text-sm">
-                Visualize progress with charts and review a full history log for
-                audit and transparency.
-              </p>
             </div>
           </div>
         </div>
