@@ -24,10 +24,15 @@ function RegisterAndLogout() {
 }
 
 function App() {
+  const basename =
+    typeof window !== "undefined" && window.location.pathname.startsWith("/Lantaw")
+      ? "/Lantaw"
+      : "";
+
   return (
     <AuthProvider>
       <ProjectProvider>
-        <BrowserRouter basename="/Lantaw">
+        <BrowserRouter basename={basename}>
           <Routes>
             {/* Public routes */}
             <Route path="/landing" element={<Landing />} />
