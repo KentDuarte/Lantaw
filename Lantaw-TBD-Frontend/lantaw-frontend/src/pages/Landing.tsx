@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/common/button";
 import {
@@ -9,7 +9,15 @@ import {
   ClipboardList,
 } from "lucide-react";
 import macbookImage from "../../../../Image/Macbook Lantaw.png";
+import macbookAnalyticsImage from "../../../../Image/Macbook Lantaw Analytics.png";
+import macbookCrImage from "../../../../Image/Macbook Lantaw CR.png";
+import macbookHistoryImage from "../../../../Image/Macbook Lantaw History.png";
+import macbookSignInImage from "../../../../Image/Macbook Lantaw Sign In.png";
 import iPhoneImage from "../../../../Image/iPhone Lantaw.png";
+import iPhoneAnalyticsImage from "../../../../Image/iPhone Lantaw Analytics.png";
+import iPhoneCrImage from "../../../../Image/iPhone Lantaw CR.png";
+import iPhoneHistoryImage from "../../../../Image/iPhone Lantaw History.png";
+import iPhoneSignInImage from "../../../../Image/iPhone Lantaw Sign In.png";
 
 function DecorativeWaves() {
   return (
@@ -193,6 +201,104 @@ function DecorativeWaves() {
   );
 }
 
+type RotatingCrossfadeImageProps = {
+  slides: string[];
+  startWhen: boolean;
+  reducedMotion: boolean;
+  alt: string;
+  className: string;
+  intervalMs?: number;
+  fadeMs?: number;
+};
+
+function RotatingCrossfadeImage({
+  slides,
+  startWhen,
+  reducedMotion,
+  alt,
+  className,
+  intervalMs = 3000,
+  fadeMs = 400,
+}: RotatingCrossfadeImageProps) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [incomingIndex, setIncomingIndex] = useState(
+    slides.length > 1 ? 1 : 0,
+  );
+  const [isFading, setIsFading] = useState(false);
+
+  const slidesRef = useRef(slides);
+  useEffect(() => {
+    slidesRef.current = slides;
+    // Keep indices in-bounds if slides ever changes.
+    setCurrentIndex((prev) => Math.min(prev, Math.max(0, slides.length - 1)));
+    setIncomingIndex((prev) =>
+      slides.length <= 1 ? 0 : Math.min(prev, slides.length - 1),
+    );
+  }, [slides]);
+
+  const currentIndexRef = useRef(currentIndex);
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
+  const isFadingRef = useRef(isFading);
+  useEffect(() => {
+    isFadingRef.current = isFading;
+  }, [isFading]);
+
+  useEffect(() => {
+    if (!startWhen || reducedMotion) return;
+    if (slidesRef.current.length <= 1) return;
+
+    let timeoutId: number | undefined;
+    const intervalId = window.setInterval(() => {
+      if (isFadingRef.current) return;
+
+      const slideList = slidesRef.current;
+      const current = currentIndexRef.current;
+      const next = (current + 1) % slideList.length;
+
+      setIncomingIndex(next);
+      setIsFading(true);
+
+      timeoutId = window.setTimeout(() => {
+        currentIndexRef.current = next;
+        setCurrentIndex(next);
+        setIsFading(false);
+      }, fadeMs);
+    }, intervalMs);
+
+    return () => {
+      window.clearInterval(intervalId);
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [startWhen, reducedMotion, intervalMs, fadeMs]);
+
+  const transitionStyle = { transitionDuration: `${fadeMs}ms` };
+
+  return (
+    <div className="relative">
+      <img
+        src={slides[currentIndex]}
+        alt={alt}
+        className={className}
+      />
+
+      {slides.length > 1 ? (
+        <img
+          src={slides[incomingIndex]}
+          alt={alt}
+          aria-hidden
+          className={`${className} pointer-events-none absolute top-0 left-0 transition-opacity ${
+            isFading ? "opacity-100" : "opacity-0"
+          }`}
+          style={transitionStyle}
+        />
+      ) : null}
+    </div>
+  );
+}
+
 export default function Landing() {
   const navigate = useNavigate();
 
@@ -207,6 +313,48 @@ export default function Landing() {
 
   const featuresSectionRef = useRef<HTMLElement | null>(null);
   const [hasRevealedFeatures, setHasRevealedFeatures] = useState(false);
+
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    update();
+    // Safari fallback
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", update);
+      return () => mediaQuery.removeEventListener("change", update);
+    }
+
+    mediaQuery.addListener(update);
+    return () => mediaQuery.removeListener(update);
+  }, []);
+
+  const ROTATE_INTERVAL_MS = 4500;
+
+  const macbookSlides = useMemo(
+    () => [
+      macbookImage,
+      macbookAnalyticsImage,
+      macbookCrImage,
+      macbookHistoryImage,
+      macbookSignInImage,
+    ],
+    [],
+  );
+
+  const iPhoneSlides = useMemo(
+    () => [
+      iPhoneImage,
+      iPhoneAnalyticsImage,
+      iPhoneCrImage,
+      iPhoneHistoryImage,
+      iPhoneSignInImage,
+    ],
+    [],
+  );
 
   useEffect(() => {
     if (!whatSectionRef.current) return;
@@ -326,10 +474,13 @@ export default function Landing() {
               "motion-reduce:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-none",
             ].join(" ")}
           >
-            <img
-              src={macbookImage}
+            <RotatingCrossfadeImage
+              slides={macbookSlides}
+              startWhen={hasRevealedHero}
+              reducedMotion={prefersReducedMotion}
               alt="Lantaw app preview"
               className="w-full max-w-6xl lg:max-w-7xl h-auto rounded-md"
+              intervalMs={ROTATE_INTERVAL_MS}
             />
           </div>
         </div>
@@ -377,10 +528,13 @@ export default function Landing() {
               "motion-reduce:opacity-100 motion-reduce:translate-y-0 motion-reduce:transition-none",
             ].join(" ")}
           >
-            <img
-              src={iPhoneImage}
+            <RotatingCrossfadeImage
+              slides={iPhoneSlides}
+              startWhen={hasRevealedWhat}
+              reducedMotion={prefersReducedMotion}
               alt="Lantaw mobile preview"
               className="w-full max-w-64 h-auto rounded-md"
+              intervalMs={ROTATE_INTERVAL_MS}
             />
           </div>
 
